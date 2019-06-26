@@ -40,7 +40,7 @@ plot_truth=function(){
 }
 
 
-make_truth_plot=function(clusters=NULL,gene_list_fn="",path="output/main_figures/",figure_fn="truth",zlim=c(0,3),ncell_per_cluster=100,downsampling_version="2000",use_default_cluster_order=T,gene_list=NULL,gene_text_cex = 3,cluster_text_cex=2,seperatorBars_lwd=3,reorder_genes=F,samples=NULL)
+make_truth_plot=function(clusters=NULL,gene_list_fn="",path="output/main_figures/",figure_fn="truth",zlim=c(0,3),ncell_per_cluster=100,downsampling_version="2000",use_default_cluster_order=T,gene_list=NULL,gene_text_cex = 3,cluster_text_cex=2,seperatorBars_lwd=3,reorder_genes=F,samples=NULL,gene_list_path="")
 {
   if (is.null(clusters)){
     clusters=unique(ileum_ldm$dataset$cell_to_cluster)
@@ -67,7 +67,7 @@ make_truth_plot=function(clusters=NULL,gene_list_fn="",path="output/main_figures
   cells=unlist(l)
   ds=ds[,cells]
   if (is.null(gene_list)){
-    gene_list2=readLines(paste("input/Gene lists/",gene_list_fn,sep=""))
+    gene_list2=readLines(paste(gene_list_path,gene_list_fn,sep="/"))
     gene_list2_adj=adjust_gene_names(gene_list2,row.names(ds))
     gene_list2_adj=gene_list2_adj[gene_list2_adj%in%rownames(ds)]
   }
