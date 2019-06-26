@@ -1,6 +1,6 @@
 
 
-
+# Generating figures 1c and 1f
 make_truth_plots=function(clusters_to_exclude=c("23","44"),zlim=c(0,3))
 {
   clusters=setdiff(ileum_ldm$cluster_order,clusters_to_exclude)
@@ -92,6 +92,8 @@ get_pooled_freqs=function(samples,celltypes_to_include=c()){
   return(scrna_perc)
 }
 
+
+# Generating figure 1e and s2B
 cytof_comparison=function(){
   cytof=read.csv(paste(pipeline_path,"input/tables/CyTOF_cell_perecentage.csv",sep=""))
   colnames(cytof)=gsub(pattern = "\\."," ",colnames(cytof))
@@ -137,7 +139,7 @@ cytof_comparison=function(){
   plot(1e-2+scrna_inf_perc[celltypes,patients],1e-2+cytof_inf_pooled[celltypes,patients],log="xy",col=col,pch=pch,panel.first=grid(lty=1),xlab="scRNA",ylab="CyTOF",xlim=c(0.01,100),ylim=c(0.01,100),cex=1,cex.axis=1)
   legend("bottomright",legend = legend_text,col = col,pch=pch,cex=.7)
   close_plot()
-  open_plot(path=supp_figures_path,fn = "figure_2b",plot_type = "pdf",width = 4,height = 4)
+  open_plot(path=supp_figures_path,fn = "figure_s2b",plot_type = "pdf",width = 4,height = 4)
   par(mar=c(4,4,1,1))
   plot(1e-2+scrna_uninf_perc[celltypes,patients],1e-2+cytof_uninf_pooled[celltypes,patients],log="xy",col=col,pch=pch,panel.first=grid(lty=1),xlab="scRNA",ylab="CyTOF",xlim=c(0.01,100),ylim=c(0.01,100),cex=1,cex.axis=1)
   legend("bottomright",legend = legend_text,col =col,pch=pch ,cex=.7)
@@ -148,8 +150,8 @@ cytof_comparison=function(){
   stats_list[["figure_1e"]]<<-list(inflamed_pvalue=res_cor_inf$p.value,inflamed_r=as.vector(res_cor_inf$estimate),uninflamed_pvalue=res_cor_uninf$p.value,uninflamed_r=as.vector(res_cor_uninf$estimate))
 
 }
-
-figure_s1d_lineage_distribution_barplot=function(){
+# Cell-lineage distribution barplot
+figure_1e=function(){
   scrna_inf_perc=get_pooled_freqs(inflamed_samples,c("T","ILC","Plasma","B","MNP","pDC","Mast","Stromal"))
   scrna_uninf_perc=get_pooled_freqs(uninflamed_samples,c("T","ILC","Plasma","B","MNP","pDC","Mast","Stromal"))
   scrna_uninf_perc=scrna_uninf_perc[,order(scrna_inf_perc[1,])]
@@ -158,7 +160,7 @@ figure_s1d_lineage_distribution_barplot=function(){
   m[,(1:ncol(scrna_inf_perc))*2-1]=scrna_inf_perc
   m[,(1:ncol(scrna_inf_perc))*2]=scrna_uninf_perc
   
-  open_plot(path="output/main_figures/",fn = "figure_1e_lineage_distribution.pdf",plot_type = "pdf",width = 4,height = 4)
+  open_plot(path=main_figures_path,fn = "figure_1e",plot_type = "pdf",width = 4,height = 4)
   par(mar=c(6,3,1,1),lwd = .3)
   barplot(m,col=celltypes_cols1[rownames(m)],las=2,cex.axis=.8,cex.names=.6,space = c(.8,.2))
   grid(nx=NA,ny=NULL,lty=1)
@@ -166,8 +168,8 @@ figure_s1d_lineage_distribution_barplot=function(){
   close_plot()
 }
 
-
-figure_1g_cluster_frequencies_inf_uninf=function(){
+# Clusters_fractions_barplots_inflamded_vs_uninflamed
+figure_1g=function(){
   get_cell_counts=function(lm,selected_samples){
       scRNA_tab=table(lm$dataset$cell_to_cluster,(lm$dataset$cell_to_sample))
       not_good_clusters=names(lm$clustAnnots[rownames(scRNA_tab)])[grep("Not good",lm$clustAnnots[rownames(scRNA_tab)])]
@@ -187,7 +189,7 @@ figure_1g_cluster_frequencies_inf_uninf=function(){
   freqs_inf=get_freqs(ileum_ldm,inflamed_samples_filtered[sample_to_patient[inflamed_samples_filtered]%in%c(pat1,pat2)])
   freqs_uninf=get_freqs(ileum_ldm,uninflamed_samples_filtered[sample_to_patient[uninflamed_samples_filtered]%in%c(pat1,pat2)])
   border_col=1
-  #  ord=order(paste(annots_tab[colnames(freqs_inf),3],annots_tab[colnames(freqs_inf),2]))
+
   y_inf=colMeans(freqs_inf)
   y_uninf=colMeans(freqs_uninf)
   reg=0.005
@@ -196,7 +198,7 @@ figure_1g_cluster_frequencies_inf_uninf=function(){
   v=rep((1:length(ranks_l))*1000,sapply(ranks_l,length))+unlist(ranks_l)
   names(v)=unlist(sapply(ranks_l,names))
   ord=names(sort(v))
-  open_plot(path="output/main_figures/",fn="figure_1g_all_cluster_freqs_barplots_inf_uninf",plot_type = "pdf",width=4,height=4)
+  open_plot(path=main_figures_path,fn="figure_1g",plot_type = "pdf",width=4,height=4)
   layout(matrix(1:2,1,2))
   par(mar=c(5,5,2,0),lwd = .3 )
   infy=colMeans(freqs_inf)[ord]
@@ -212,103 +214,15 @@ figure_1g_cluster_frequencies_inf_uninf=function(){
   grid(nx=NULL, ny=NA)
   barpx<-barplot(uninfy,beside=T,las=2,col=celltypes_cols2[cluster_to_cluster_set_with_pdc[names(uninfy)]],xlim=c(0,.14),horiz=T,names.arg ="",xlab= "Uninflamed",cex.axis=.5,border = border_col,add=T)
   error.bar(barpx,uninfy,se,col=border_col,length = .01)
-#  legend("bottomright",legend=names(celltypes_cols1),col=celltypes_cols1,pch=15,cex=1)
+
   close_plot()
 }
 
-figure_distance_between_inf_uninf=function(){
-  pool_subtypes_frequencies=function (lm, samples, cluster_sets, pool_subtype = T) {
-    cluster_sets=cluster_sets[!names(cluster_sets)%in%"Not good"]
-    get_freqs=function(lm,selected_samples){
-      scRNA_tab=get_cell_counts(lm,selected_samples)
-      freqs=(scRNA_tab)/rowSums(scRNA_tab)
-      return(freqs)
-    }
-    freqs = get_freqs(lm, samples)
-    pool_subtype_freqs = function(one_subtype) {
-      return(rowSums(freqs[, unlist(one_subtype), drop = F]))
-    }
-    pool_one_clusterset = function(one_clusterset) {
-      subtypes_freqs = sapply(one_clusterset,  pool_subtype_freqs)
-      colnames(subtypes_freqs) = names(one_clusterset)
-      return(subtypes_freqs)
-    }
-    return(sapply(cluster_sets, pool_one_clusterset, simplify = F))
-  }
-  freqs_inf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,inflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
-  freqs_uninf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,uninflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
-  open_plot(path = "output/main_figures/",fn = "dissimilarity_inf_uninf",plot_type = "pdf",6,6)
-  par(mar=c(5,5,1,1))
-  barplot(sqrt(colSums(((freqs_inf-freqs_uninf)/((freqs_inf+freqs_uninf)/2))^2)),ylim=c(0,.8),ylab="dissimilarity (inf vs uninf",border=F,cex.names = .7)
-  close_plot()
-}
-
-figure_pca_samples=function(){
- 
-  reg=1e-3
-  mat_inf_freq= t(do.call(cbind,normalize_by_clusterset_frequency(ileum_ldm$dataset,inflamed_samples_filtered,cluster_sets = ileum_ldm$cluster_sets[setdiff(names(ileum_ldm$cluster_sets),"Mast")] ,pool_subtype=T,reg=reg)))
-  colnames(mat_inf_freq)=paste(colnames(mat_inf_freq),"inf")
-  mat_uninf_freq=t(do.call(cbind,normalize_by_clusterset_frequency(ileum_ldm$dataset,uninflamed_samples_filtered,cluster_sets =  ileum_ldm$cluster_sets[setdiff(names(ileum_ldm$cluster_sets),"Mast")] ,pool_subtype=T,reg=reg)))
-  colnames(mat_uninf_freq)=paste(colnames(mat_uninf_freq),"uninf")
-  
-  pca_res=princomp((log10(cbind(mat_inf_freq,mat_uninf_freq))))
-  plot_one_pca=function(xi,yi,with_labels=T){
-    pca_scores=pca_res$loadings
-    col=1
-    #col=pat_cols[pat]
-    par(mar=c(5,5,3,3))
-    ylim=c(min(unclass(pca_scores[,yi])),0.03+max(unclass(pca_scores[,yi])))
-    xlim=range(unclass(pca_scores[,xi]))
-    inf_mask=1:ncol(mat_inf_freq)
-    plot(unclass(pca_scores[inf_mask,c(xi,yi)]),col=0,pch=16,ylim=ylim,xlim=xlim,panel.first=grid(lty=1))
- #   library(shape)
-  #  pat=2-sample_to_patient[c(inf_pat1,inf_pat2)]%in%pat1
-    arrows(unclass(pca_scores[-1*inf_mask,xi]),unclass(pca_scores[-1*inf_mask,yi]),unclass(pca_scores[inf_mask,xi]),unclass(pca_scores[inf_mask,yi]),col =col,lty=1,lwd=0.5,length = 0)
-    if (with_labels){
-      text(unclass(pca_scores[inf_mask,xi]),unclass(pca_scores[inf_mask,yi])+.03,labels = gsub("rp ","",sample_to_patient[gsub(pattern = "rp | inf| uninf",replacement = "",rownames(pca_scores)[inf_mask])]),cex=.8)
-    }
-    points(unclass(pca_scores[-1*inf_mask,xi]),unclass(pca_scores[-1*inf_mask,yi]),pch=20,cex=1.5,col="cornflowerblue")
-    points(unclass(pca_scores[1*inf_mask,xi]),unclass(pca_scores[1*inf_mask,yi]),pch=20,cex=1.5,col=2)
-    legend("topright",legend = c("Inflamed","Uninflamed"),col = c(2,"cornflowerblue"),pch=20,cex=1,pt.cex = 1.5)
-  }
-  open_plot(path="output/main_figures/",fn="pca_samples_with_labels",plot_type = "pdf",width = 5,height = 5)
-  plot_one_pca(1,2)
-  title(paste(round(100*sum(pca_res$sdev[1:2]^2)/sum(pca_res$sdev^2),digits=1),"% of variance explained by PC1+PC2"))
-  close_plot()
-  
-  open_plot(path="output/main_figures/",fn="pca_samples",plot_type = "pdf",width = 5,height = 5)
-  plot_one_pca(1,2,F)
-  title(paste(round(100*sum(pca_res$sdev[1:2]^2)/sum(pca_res$sdev^2),digits=1),"% of variance explained by PC1+PC2"),cex=.7)
-  close_plot()
-  
-  
-  v=cluster_to_cluster_set[names(cluster_to_subtype1)]
-  names(v)=cluster_to_subtype1
-  subtype_to_clusterset=v[unique(names(v))]
-  plot_comp=function(i,ylim=c(-4,4)){
-    par(mar=c(7,3,3,1),lwd=.3)
-    m=sort(pca_res$scores[,i])
-    barplot(m,col=celltypes_cols1[subtype_to_clusterset[names(m)]],names.arg = names(m),ylim=ylim,las=2,cex.names = .4)
-    grid(nx=NA, ny=NULL,lwd=2)
-    barplot(m,col=celltypes_cols1[subtype_to_clusterset[names(m)]],names.arg = names(m),ylim=ylim,add=T,las=2,cex.names = .4)
-  }
-
-  open_plot(path="output/main_figures/",fn="pca_coef_1_2",plot_type = "pdf",width = 6,height = 5)
-   layout(matrix(1:2,1,2))
-   plot_comp(1)
-  title(main="coefficients PC1")
-   plot_comp(2)
-   title(main="coefficients PC2")
-  close_plot()
-  
-#  open_plot(path="output/main_figures/",fn="pca_coef_2",plot_type = "pdf",width = 3,height = 3)
-#  plot_comp(2)
-#  close_plot()
-}
 
 
+# pca analysis
 
-figure_pca_samples2=function(){
+figure_1h_s2g=function(){
   
   reg=1e-3
   mat_inf_freq= t(do.call(cbind,normalize_by_clusterset_frequency(ileum_ldm$dataset,inflamed_samples_filtered,cluster_sets = ileum_ldm$cluster_sets[setdiff(names(ileum_ldm$cluster_sets),"Mast")] ,pool_subtype=T,reg=reg)))
@@ -318,30 +232,11 @@ figure_pca_samples2=function(){
   
   z=log2(cbind(mat_inf_freq,mat_uninf_freq));z2=apply(z,1,quantile,c(.15,.85))
   zmask=z2[2,]-z2[1,]>2
-  print(sum(zmask))
+  #print(sum(zmask))
   pca_res=princomp(t(z[zmask,]))
   pca_scores=pca_res$scores
   pca_loadings=pca_res$loadings
-  plot_one_pca=function(xi,yi,with_labels=T){
-    col='grey'
-    #col=pat_cols[pat]
-    
-  
-    par(mar=c(5,5,3,3))
-    ylim=c(min(unclass(pca_scores[,yi])),0.03+max(unclass(pca_scores[,yi])))
-    xlim=range(unclass(pca_scores[,xi]))
-    inf_mask=1:ncol(mat_inf_freq)
-    plot(unclass(pca_scores[inf_mask,c(xi,yi)]),col=0,pch=16,ylim=ylim,xlim=xlim,panel.first=grid(lty=1))
-    #   library(shape)
-    #  pat=2-sample_to_patient[c(inf_pat1,inf_pat2)]%in%pat1
-    arrows(unclass(pca_scores[-1*inf_mask,xi]),unclass(pca_scores[-1*inf_mask,yi]),unclass(pca_scores[inf_mask,xi]),unclass(pca_scores[inf_mask,yi]),col =col,lty=1,lwd=0.5,length = 0)
-    if (with_labels){
-      text(unclass(pca_scores[inf_mask,xi]),unclass(pca_scores[inf_mask,yi])+.3,labels = gsub("rp ","",sample_to_patient[gsub(pattern = "rp | inf| uninf",replacement = "",rownames(pca_scores)[inf_mask])]),cex=.8)
-    }
-    points(unclass(pca_scores[-1*inf_mask,xi]),unclass(pca_scores[-1*inf_mask,yi]),pch=20,cex=1.5,col="cornflowerblue")
-    points(unclass(pca_scores[1*inf_mask,xi]),unclass(pca_scores[1*inf_mask,yi]),pch=20,cex=1.5,col=2)
-    legend("topleft",legend = c("Inflamed","Uninflamed"),col = c(2,"cornflowerblue"),pch=20,cex=1,pt.cex = 1.5)
-  }
+ 
   
   plot_one_pca_inf_uninf=function(xi,with_labels=T){
     col='grey'
@@ -352,44 +247,29 @@ figure_pca_samples2=function(){
     
     deltas=scores_inf-scores_uninf
     par(mar=c(5,5,3,3))
-  #  ylim=c(min(deltas),0.03+max(deltas))
-  #  xlim=range(scores_inf)
+
     ylim=c(0,.5+max(deltas))
     xlim=range(scores_inf)
     inf_mask=1:ncol(mat_inf_freq)
     plot(scores_inf,deltas,col=0,pch=16,ylim=ylim,xlim=xlim,panel.first=grid(lty=1))
-    #   library(shape)
-    #  pat=2-sample_to_patient[c(inf_pat1,inf_pat2)]%in%pat1
-#    arrows(unclass(pca_scores[-1*inf_mask,xi]),unclass(pca_scores[-1*inf_mask,yi]),unclass(pca_scores[inf_mask,xi]),unclass(pca_scores[inf_mask,yi]),col =col,lty=1,lwd=0.5,length = 0)
     if (with_labels){
       text(scores_inf,deltas+.5,labels = gsub("rp ","",sample_to_patient[gsub(pattern = "rp | inf| uninf",replacement = "",rownames(pca_scores)[inf_mask])]),cex=.8)
     }
     points(scores_inf,deltas,pch=20,cex=1.5,col=1)
-#    legend("topleft",legend = c("Inflamed","Uninflamed"),col = c(2,"cornflowerblue"),pch=20,cex=1,pt.cex = 1.5)
   }
   
   
-  open_plot(path="output/main_figures/",fn="pca_pc1_delta_samples_with_labels",plot_type = "pdf",width = 5,height = 5)
-#  plot_one_pca(1,2)
+  open_plot(path=main_figures_path,fn="figure_1h_with_labels",plot_type = "pdf",width = 5,height = 5)
   plot_one_pca_inf_uninf(1)
   title(paste(round(100*sum(pca_res$sdev[1]^2)/sum(pca_res$sdev^2),digits=1),"% of variance explained by PC1"))
   close_plot()
   
-  open_plot(path="output/main_figures/",fn="pca_pc1_delta_samples",plot_type = "pdf",width = 5,height = 5)
+  open_plot(path=main_figures_path,fn="figure_1h",plot_type = "pdf",width = 5,height = 5)
   plot_one_pca_inf_uninf(1,with_labels = F)
   title(paste(round(100*sum(pca_res$sdev[1]^2)/sum(pca_res$sdev^2),digits=1),"% of variance explained by PC1"),cex=.7)
   close_plot()
   
-  open_plot(path="output/main_figures/",fn="pca_samples_with_labels",plot_type = "pdf",width = 5,height = 5)
-  #  plot_one_pca(1,2)
-  plot_one_pca(1,2)
-  title(paste(round(100*sum(pca_res$sdev[1:2]^2)/sum(pca_res$sdev^2),digits=1),"% of variance explained by PC1+PC2"))
-  close_plot()
-  
-  open_plot(path="output/main_figures/",fn="pca_samples",plot_type = "pdf",width = 5,height = 5)
-  plot_one_pca(1,2,with_labels = F)
-  title(paste(round(100*sum(pca_res$sdev[1:2]^2)/sum(pca_res$sdev^2),digits=1),"% of variance explained by PC1+PC2"),cex=.7)
-  close_plot()
+ 
   
   
   v=cluster_to_cluster_set[names(cluster_to_subtype1)]
@@ -403,16 +283,14 @@ figure_pca_samples2=function(){
     barplot(m,col=celltypes_cols1[subtype_to_clusterset[names(m)]],names.arg = names(m),ylim=ylim,add=T,las=2,cex.names = .4)
   }
   
-  open_plot(path="output/main_figures/",fn="pca_coef_1_2",plot_type = "pdf",width = 4,height = 4)
+  open_plot(path=supp_figures_path,fn="figure_s2g",plot_type = "pdf",width = 4,height = 4)
   plot_comp(1)
   title(main="loadings PC1")
-#  plot_comp(2)
-#  title(main="coefficients PC2")
   close_plot()
-  print(t.test(pca_scores[grep(" inf",rownames(pca_scores),val=T),1]-pca_scores[grep(" uninf",rownames(pca_scores),val=T),1]))
-  #  open_plot(path="output/main_figures/",fn="pca_coef_2",plot_type = "pdf",width = 3,height = 3)
-  #  plot_comp(2)
-  #  close_plot()
+  
+  # TODO: check if this t-test is used
+ # print(t.test(pca_scores[grep(" inf",rownames(pca_scores),val=T),1]-pca_scores[grep(" uninf",rownames(pca_scores),val=T),1]))
+
 
 }
 
@@ -423,22 +301,6 @@ general_stats=function(){
   ncells_blood<<-sum(table(blood_ldm$clustAnnots[blood_ldm$dataset$cell_to_cluster]))
   ncells_total<<-ncells_gut+ncells_blood
 }
-
-
-figure_1c=function(){
-  
-  tab=table(ileum_ldm$dataset$cell_to_sample)
-  tab_inf=tab[inflamed_samples]
-  names(tab_inf)=sample_to_patient[names(tab_inf)]
-  tab_uninf=tab[uninflamed_samples]
-  names(tab_uninf)=sample_to_patient[names(tab_uninf)]
-  open_plot(path="output/supp_figures/",fn="figure_1c",plot_type = "pdf",width = 4,height = 4)
-  par(mar=c(4,4,1,1))
-  barplot(rbind(tab_inf,tab_uninf),beside=T,col=cols_inf_uninf,las=2,cex.names=.8,cex.axis = .8,ylim=c(0,10000))
-  legend("topleft",col=cols_inf_uninf,legend=c("Inflamed","Uinflamed"),pch=15,cex=.8)
-  close_plot()
-}
-
 
 
 
@@ -465,18 +327,10 @@ numis_threshold_analysis=function(){
 }
 
 
-umicount_per_cluster_boxplot=function(){
-  open_plot("output/supp_figures/","figure_sX_umicount_boxplot",plot_type = "pdf",width = 8,height = 8)
-  par(mar=c(7,7,1,1))
-  l=split(colSums(ileum_ldm$dataset$umitab),cluster_to_cluster_set[ileum_ldm$dataset$cell_to_cluster])
-  boxplot(l,col=celltypes_cols1[names(l)],log="y",las=2)
-  close_plot()
-}
 
-
-
-figure_s1a_numis_cumulative=function(){
-  open_plot("output/supp_figures/","figure_s1a_numis_cumulative",plot_type = "pdf",width = 5,height = 5)
+# Cumulative distributions of UMI counts/cells
+figure_s1a=function(){
+  open_plot(supp_figures_path,"figure_s1a",plot_type = "pdf",width = 5,height = 5)
   samp_fact=as.factor(sample_to_patient[names(ileum_ldm$dataset$numis_before_filtering)])
   matplot(sapply(ileum_ldm$dataset$numis_before_filtering,quantile,0:100/100),0:100/100,log="x",type='l',lty=ifelse(names(ileum_ldm$dataset$numis_before_filtering)%in%inflamed_samples,1,2),lwd=2,xlab="#UMIs",ylab="Cumulative Fraction",col=sample_cols[samp_fact])
   grid(lty=1)
@@ -497,11 +351,12 @@ ncells_per_celltype=function(){
   close_plot()
 }
 
-figure_s1j_ncells_per_cluster=function(){
+# Number of cells per cluster
+figure_s1j=function(){
   tab=table(ileum_ldm$dataset$cell_to_cluster)[ileum_ldm$cluster_order]
   clusterset=sapply(strsplit(cluster_to_cluster_set[names(tab)]," | "),function(x){tail(x,1)})
   ord=order(clusterset)
-  open_plot("output/supp_figures/","figure_s1j_ncells_per_cluster",plot_type = "pdf",width = 15,height = 8)
+  open_plot(supp_figures_path,"figure_s1j",plot_type = "pdf",width = 15,height = 8)
   par(mar=c(5,7,4,1))
   barplot(tab[ord],log="y",las=2,ylim=c(1,10000),col=celltypes_cols1[clusterset[ord]],ylab="", xlab="")
   mtext("Cell Counts",side = 2,line=4,cex=2)
@@ -509,13 +364,13 @@ figure_s1j_ncells_per_cluster=function(){
   close_plot()
 }
 
-
-figure_s1k_numis_per_cell_per_cluster=function(){
+# Median UMI counts per cluster
+figure_s1k=function(){
   numis=colSums(ileum_ldm$dataset$umitab)
   med=sapply(split(numis,ileum_ldm$dataset$cell_to_cluster),median)[ileum_ldm$cluster_order]
   clusterset=sapply(strsplit(cluster_to_cluster_set[names(med)]," | "),function(x){tail(x,1)})
   ord=order(clusterset)
-  open_plot("output/supp_figures/","figure_s1k_ncells_per_cluster",plot_type = "pdf",width = 15,height = 8)
+  open_plot(supp_figures_path,"figure_s1k",plot_type = "pdf",width = 15,height = 8)
   par(mar=c(5,7,4,1))
   barplot(med[ord],log="y",las=2,col=celltypes_cols1[clusterset[ord]],ylab="", xlab="",ylim=c(100,10000))
   mtext("Median (#UMIs)",side = 2,line=4,cex=2)
@@ -523,35 +378,33 @@ figure_s1k_numis_per_cell_per_cluster=function(){
   close_plot()
 }
 
-figure_s1b_c_d=function(){
-  open_plot("output/supp_figures/","figure_s1b_insilico_sorting_mito",plot_type = "pdf",width = 6,height = 6)
-  samp=inflamed_samples_v2[2];prof="MITO";
+figure_s1b_c=function(){
+  # in-silico_sorting by mitochondrial genes
+  open_plot(supp_figures_path,"figure_s1b",plot_type = "pdf",width = 6,height = 6)
+  samp=inflamed_samples_v2[2]
+  prof="MITO"
   numis=ileum_ldm$dataset$numis_before_filtering[[samp]]
   plot(numis,ileum_ldm$dataset$insilico_gating_scores[[prof]][names(numis)],log="x",ylab=prof,xlab="#UMIs",cex=.8,panel.first = grid(lty=1),col=ifelse(numis<1000,"gray",1))
   abline(h=ileum_ldm$model$params$insilico_gating[[prof]]$interval[2],col=2,lty=2)
   close_plot()
   
-  open_plot("output/supp_figures/","figure_s1b_insilico_sorting_ep",plot_type = "pdf",width = 6,height = 6)
-  samp=inflamed_samples_v2[2];prof="EP";
+  # in-silico_sorting by epithelial genes
+  open_plot(supp_figures_path,"figure_s1c",plot_type = "pdf",width = 6,height = 6)
+  samp=inflamed_samples_v2[2]
+  prof="EP"
   numis=ileum_ldm$dataset$numis_before_filtering[[samp]]
   plot(numis,ileum_ldm$dataset$insilico_gating_scores[[prof]][names(numis)],log="x",ylab=prof,xlab="#UMIs",cex=.8,panel.first = grid(lty=1),col=ifelse(numis<1000,"gray",1))
   abline(h=ileum_ldm$model$params$insilico_gating[[prof]]$interval[2],col=2,lty=2)
   close_plot()
   
-  open_plot("output/supp_figures/","figure_s1c_insilico_sorting_rbc",plot_type = "pdf",width = 6,height = 6)
-  samp=inflamed_samples_v2[2];prof="RBC";
-  numis=ileum_ldm$dataset$numis_before_filtering[[samp]]
-  plot(numis,ileum_ldm$dataset$insilico_gating_scores[[prof]][names(numis)],log="x",ylab=prof,xlab="#UMIs",cex=.8,panel.first = grid(lty=1),col=ifelse(numis<1000,"gray",1))
-  abline(h=ileum_ldm$model$params$insilico_gating[[prof]]$interval[2],col=2,lty=2)
-  close_plot()
 }
 
-
-figure_s1d_ncells_per_sample=function(){
+# Number of cells per sample 
+figure_s1d=function(){
   tab_inf=table(sample_to_patient[ileum_ldm$dataset$cell_to_sample[ileum_ldm$dataset$cell_to_sample%in%inflamed_samples]])
   tab_uninf=table(sample_to_patient[ileum_ldm$dataset$cell_to_sample[ileum_ldm$dataset$cell_to_sample%in%uninflamed_samples]])
   
-  open_plot("output/supp_figures/","figure_s1d_ncells_per_sample",plot_type = "pdf",width = 6,height = 6)
+  open_plot(supp_figures_path,"figure_s1d",plot_type = "pdf",width = 6,height = 6)
   par(mar=c(5,5,1,1))
   tab=rbind(tab_inf,tab_uninf)[,order(as.numeric(sapply(strsplit(names(tab_inf)," "),tail,1)))]
   barplot(tab,beside=T,las=2,space = c(.5,2),col=cols_inf_uninf,ylim=c(0,10000))
@@ -562,9 +415,9 @@ figure_s1d_ncells_per_sample=function(){
 }
 
 
-
-figure_s1h_noise_percent=function(){
-  open_plot("output/supp_figures/","figure_s1h_noise_per_sample",plot_type = "pdf",width = 6,height = 6)
+# Estimated noise percentage barplots
+figure_s1h=function(){
+  open_plot(supp_figures_path,"figure_s1h",plot_type = "pdf",width = 6,height = 6)
   par(mar=c(5,5,1,1))
   v=100*ileum_ldm$dataset$alpha_noise
   v_inf=v[names(v)%in%inflamed_samples]
@@ -662,15 +515,16 @@ modules_supps=function(){
   close_plot()
 }
 
+# ncells per sample per cluster
 table_s3=function(){
-  write.csv(file="output/tables/table_S3_ncells_per_sample_per_cluster.csv",table(ileum_ldm$dataset$cell_to_sample,ileum_ldm$dataset$cell_to_cluster),quote=F)
+  write.csv(file=paste(pipeline_path,"output/tables/table_S3",sep="/"),table(ileum_ldm$dataset$cell_to_sample,ileum_ldm$dataset$cell_to_cluster),quote=F)
 }
 
-
-figure_1b_correlation_between_subtypes_by_gene_expression=function(){
+# correlation_between_subtypes_by_gene_expression
+figure_1b=function(){
   
   gene_mask=apply(ileum_ldm$model$models,1,max)>5e-5
-  print(sum(gene_mask))
+#  print(sum(gene_mask))
   m=log2(1e-5+ileum_ldm$model$models[gene_mask,unlist(ileum_ldm$cluster_sets[!names(ileum_ldm$cluster_sets)%in%"Not good"])])
   m=m-rowMeans(m)
   cormat=cor(m)
@@ -681,7 +535,7 @@ figure_1b_correlation_between_subtypes_by_gene_expression=function(){
   
   large_margin=4
   small_margin=.5
-  open_plot(path = "output/main_figures/",fn="figure_1b_cluster_correlation_by_gene_exprs",plot_type = "pdf",width = 5,height = 5)
+  open_plot(path = main_figures_path,fn="figure_1b",plot_type = "pdf",width = 5,height = 5)
   celltype_ind=match(cluster_to_cluster_set_with_pdc[colnames(cormat)[ord]],names(celltypes_cols1))
   layout(matrix(c(1,3,4,2),2,2),heights=c(.7,20),widths = c(20,.7))
   par(mar=c(.2,large_margin,.2,small_margin))
@@ -697,17 +551,17 @@ figure_1b_correlation_between_subtypes_by_gene_expression=function(){
   mtext(rownames(cormat)[ord],2,at = seq(0,1,l=ncol(cormat)),las=2,cex=.6,line =.5)
   close_plot()
   
-  open_plot(path = "output/main_figures/",fn="figure_1b_cluster_correlation_by_gene_exprs_colorscale",plot_type = "pdf",width = 4,height = 1)
+  open_plot(path = main_figures_path,fn="figure_1b_colorscale",plot_type = "pdf",width = 4,height = 1)
   par(mar=c(2,1,0,1))
   image(matrix(seq(-1,1,l=100),,1),col=colorRampPalette(c("blue","white","red"))(100),axes=F,breaks=seq(-1,1,l=101))
   axis(1)
   close_plot()
 }
 
-
-make_table_s2_stats=function(){
-  annots=read.csv("input/tables/Cohort technical summary.csv",stringsAsFactors = F)
-  tenx=read.csv("input/tables/SCQ_stats4paper_MG11122018.csv",stringsAsFactors = F)
+# stats per sample
+table_s2=function(){
+  annots=read.csv(paste(pipeline_path,"input/tables/Cohort_technical_summary.csv",sep="/"),stringsAsFactors = F)
+  tenx=read.csv(paste(pipeline_path,"input/tables/tenx_stats_per_sample.csv",sep="/"),stringsAsFactors = F)
   all=merge(annots,tenx,by.y="sample_ID",by.x="index")
 
   selected_columns=c('index', 'Disease', 'Origin', 'tissue', 'status', 'Patient.ID', 'scRNAseq', 'X10.CHEMISTRY', 'CyTOF', 'MICSSS', 
@@ -728,9 +582,8 @@ make_table_s2_stats=function(){
   colnames(numis_per_cell)=c("N_UMIs_percentile_25","N_UMIs_percentile_50","N_UMIs_percentile_75")
 
   tab=cbind(tab,nfiltered_cells_per_sample[as.character(tab$index),],N_lamina_propria_cells=as.numeric(ncells_per_sample[as.character(tab$index)]),numis_per_cell[as.character(tab$index),])
-  write.csv(file="output/tables/table_s2_sample_stats.csv",tab)
-  plot(as.numeric(tab[,"Number.of.Reads"])/tab[,"N_lamina_propria_cells"],as.numeric(tab[,"N_UMIs_percentile_50"]),log="yx",xlab="#Reads/cell",ylab="median #UMIs")
-
+  write.csv(file=paste(pipeline_path,"output/tables/table_s2.csv",sep="/"),tab,row.names = F)
+ 
 }
 
 make_gene_reference_table=function(){
@@ -766,18 +619,24 @@ make_gene_reference_table=function(){
 }
 
 make_figure1=function(){
+  figure_1b()
+  
   make_truth_plots()
   cytof_comparison()
-  figure_s1h_noise_percent()
-  figure_s1d_lineage_distribution_barplot()
-  figure_s1k_numis_per_cell_per_cluster()
-  figure_1g_cluster_frequencies_inf_uninf()
-  figure_s1a_numis_cumulative()
-  figure_1b_correlation_between_subtypes_by_gene_expression()
-  figure_s1b_c_d()
-  figure_1c()
-  figure_s1j_ncells_per_cluster()
-  umicount_per_cluster_boxplot()
-  make_table_s2_stats()
+  
+  figure_1e()
+  figure_1g()
+  figure_1h_s2g()
+
+  figure_s1a()
+  figure_s1b_c()
+  figure_s1d()
+  # figure s1e-g - clustering
+  figure_s1h() 
+  # figure s1i   - clustering
+  figure_s1j()
+  figure_s1k()
+ 
+  table_s2()
   table_s3()
 }

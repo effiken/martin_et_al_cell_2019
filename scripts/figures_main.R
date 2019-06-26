@@ -198,7 +198,6 @@ create_global_vars=function(pipeline_path){
   pat1<<-paste("rp",c(7,8,5,11,12))
   pat2<<-paste("rp",c(10,13,14,15))
   
-  source("~/")
   gsc=load_gene_symbol_converters()
   gene_symbol_old2new<<-gsc$old2new
   gene_symbol_new2old<<-gsc$new2old
@@ -242,14 +241,15 @@ main=function(pipeline_path,download_data=T,only_load_data=F,make_figures=T){
     dir.create(paste(pipeline_path,"output",sep="/"))
     dir.create(paste(pipeline_path,"output/main_figures",sep="/"))
     dir.create(paste(pipeline_path,"output/supp_figures",sep="/"))
-    my_source("figure1.R")
-    my_source("figure2.R")
-    my_source("figure3.R")
+    dir.create(paste(pipeline_path,"output/tables",sep="/"))
+    source(paste(pipeline_path,"scripts/figure1.R",sep="/"))
+  #  my_source("figure2.R")
+  #  my_source("figure3.R")
     
     make_figure1()
-    make_figure2()
-    make_figure3()
-    my_source("chem_cyt3.R")
+  #  make_figure2()
+  #  make_figure3()
+  #  my_source("chem_cyt3.R")
     
   }
 }
