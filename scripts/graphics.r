@@ -106,3 +106,32 @@ error.bar <- function(x,y, upper, lower=upper, length=0.1,horiz=T,...){
     arrows(x,y+upper, x, y-lower, angle=90, code=3, length=length, ...)
   }
 }
+
+
+
+plot_subtype_freqs=function(freq_norm,celltype,plot_legend=T,ordc=NULL,cex.names=1,cex.axis=1,ordp=c(pat1,pat2),cols=NULL,samp_labels=NULL){
+  if (is.null(ordc)){
+    ordc=order(colMeans(freq_norm[[celltype]][sample_to_patient[rownames(freq_norm[[celltype]])]%in%pat1,])/colMeans(freq_norm[[celltype]][sample_to_patient[rownames(freq_norm[[celltype]])]%in%pat2,]),decreasing=T)
+  }
+  if (!is.null(samp_labels)){
+    rownames(freq_norm[[celltype]])=samp_labels
+  }
+  m=freq_norm[[celltype]][ordp,ordc]
+  #cols=brewer.pal(length(ordc),"Set3")
+  if (is.null(cols)){
+    cols=alt_cols[1:ncol(m)]
+  }else{
+    cols=cols[ordc]
+  }
+  if (plot_legend){
+    
+    barplot(t(m),col=cols,las=2,cex.names = cex.names,cex.axis = cex.axis)
+    plot.new()
+    legend("bottomleft",legend=rev(colnames(m)),col=rev(cols),pch=15,cex=.9,bty = "n")
+  }
+  else{
+    barplot(t(m),col=cols,las=2,cex.names=cex.names,cex.axis=1)
+  }
+  return(ordc)
+}
+

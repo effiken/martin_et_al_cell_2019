@@ -114,6 +114,7 @@ create_global_vars=function(pipeline_path){
   
   main_figures_path<<-paste(pipeline_path,"output/main_figures/",sep="/")
   supp_figures_path<<-paste(pipeline_path,"output/supp_figures/",sep="/")
+  tables_path<<-paste(pipeline_path,"output/tables/",sep="/")
   
   samples_by_status<<-split(sample_tab$index,sample_tab$status) 
   sample_to_patient<<-gsub("CD Biop","bp ",sample_tab$Patient.ID)

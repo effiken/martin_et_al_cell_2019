@@ -30,25 +30,40 @@ make_figure_correlation_between_subtypes=function(path,prefix,lm,selected_sample
   close_plot()
   
 }
-
-
-freq_sig_test=function(m,design,nperm=1e5){
-  mean1=colMeans(m[design==1,])
-  mean2=colMeans(m[design==2,])
-  obs_fc=abs(log2((1e-5+mean1)/(1e-5+mean2)))
-  v=rep(0,ncol(m))
-  for (i in 1:nperm){
-    samped_design=sample(design,size = length(design),replace = F)
-    v=v+obs_fc<abs(log2((1e-5+colMeans(m[samped_design==1,]))/(1e-5+colMeans(m[samped_design==2,]))))
+# distance_between_inf_uninf
+figure_s2e=function(){
+  pool_subtypes_frequencies=function (lm, samples, cluster_sets, pool_subtype = T) {
+    cluster_sets=cluster_sets[!names(cluster_sets)%in%"Not good"]
+    get_freqs=function(lm,selected_samples){
+      scRNA_tab=get_cell_counts(lm,selected_samples)
+      freqs=(scRNA_tab)/rowSums(scRNA_tab)
+      return(freqs)
+    }
+    freqs = get_freqs(lm, samples)
+    pool_subtype_freqs = function(one_subtype) {
+      return(rowSums(freqs[, unlist(one_subtype), drop = F]))
+    }
+    pool_one_clusterset = function(one_clusterset) {
+      subtypes_freqs = sapply(one_clusterset,  pool_subtype_freqs)
+      colnames(subtypes_freqs) = names(one_clusterset)
+      return(subtypes_freqs)
+    }
+    return(sapply(cluster_sets, pool_one_clusterset, simplify = F))
   }
-  return(v/nperm)
+  freqs_inf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,inflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
+  freqs_uninf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,uninflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
+  open_plot(path = main_figures_path,fn = "figure_s2e",plot_type = "pdf",6,6)
+  par(mar=c(5,5,1,1))
+  barplot(sqrt(colSums(((freqs_inf-freqs_uninf)/((freqs_inf+freqs_uninf)/2))^2)),ylim=c(0,.8),ylab="dissimilarity (inf vs uninf",border=F,cex.names = .7)
+  close_plot()
 }
 
-inf_uninf_freq_barplot=function(freqs,compartment){
+
+
+inf_uninf_freq_barplot=function(freqs,compartment,fig){
   m=freqs[[compartment]]
   inf=m[inflamed_samples_filtered,]
   uninf=m[uninflamed_samples_filtered,]
-  browser()
   #freq_sig_test(m[c(inflamed_samples_filtered,uninflamed_samples_filtered),],c(inflamed_samples_filtered,uninflamed_samples_filtered)%in%inflamed_samples_filtered+1)
   
   ord=order(log2(colMeans(inf)/colMeans(uninf)),decreasing=T)
@@ -68,66 +83,74 @@ inf_uninf_freq_barplot=function(freqs,compartment){
     scale_fill_manual("legend", values = c("Inflamed" = cols_inf_uninf[1], "Uninflamed" = cols_inf_uninf[2])) +
     labs(title=compartment)
   p
-  ggsave(filename = paste("output/main_figures/figure2_",compartment,"_inf_uninf_freq.pdf",sep=""),p)
-  pvalues=p.adjust(sapply(1:ncol(inf),function(i){wilcox.test(uninf[,i],inf[,i])$p.value}))
-  names(pvalues)=colnames(inf)
-  print(pvalues)
-  #return(pvalues)
+  ggsave(filename = paste(main_figures_path,"figure_",fig,".pdf",sep=""),p)
+
 }
 
 
 make_inf_uninf_freq_barplot=function(){
   freqs=normalize_by_clusterset_frequency(ileum_ldm$dataset,samples = c(inflamed_samples_filtered,uninflamed_samples_filtered),cluster_sets = ileum_ldm$cluster_sets,pool_subtype = T,reg = 0)
-  inf_uninf_freq_barplot(freqs,"MNP")
-  inf_uninf_freq_barplot(freqs,"Plasma")
-  inf_uninf_freq_barplot(freqs,"T")
-  inf_uninf_freq_barplot(freqs,"Stromal")
-  m=do.call(cbind,freqs)
-  print(freq_sig_test(m,rownames(m)%in%inflamed_samples_filtered+1))
-}
-
-tregs_de=function(){
-  mask=bulk$design$dataset=="RISK"
-  genes_to_exclude=c("JCHAIN","IGLC2","IGKC","FABP6","PHGR1","DEFA5","DEFA6","REG1A","FABP1","IGHG3","IGHG2","IGHG1","XIST")
-  de_tregs=read.csv("output/tables/DE_patterns/DE_inf_pat1_vs_pat2_Tregs.T.csv",row.names = 1)
-  gene_mask=rownames(de_tregs)[de_tregs[,"log2_FC"]<(-1)&de_tregs[,"adj.p.value"]<(0.01)]
-  gene_mask=setdiff(gene_mask,genes_to_exclude)
-  z=t(bulk$z[intersect(gene_mask,rownames(bulk$z)),mask])
-  z=z[rowSums(!is.na(z))>1,colSums(!is.na(z))>1]
-  cor(z,bulk$scores[rownames(z),"projected",drop=F],use="comp")
+  inf_uninf_freq_barplot(freqs,"MNP",fig="s5a")
+  inf_uninf_freq_barplot(freqs,"Plasma",fig="s5d")
+  inf_uninf_freq_barplot(freqs,"T",fig="s5b")
+  inf_uninf_freq_barplot(freqs,"Stromal",fig="s5c")
 }
 
 
-expression_profiles_corr=function(){
-  max_exprssion=1e-3
+
+
+figure_2e=function(ncell_per_cluster=300){
+  
+  tcell_list=read.table(paste(pipeline_path,"input/gene_lists/gene_list_figure_3a.txt",sep="/"),row.names = 1,header=T,stringsAsFactors = F,sep="\t")
+  genes=strsplit(tcell_list[,1],",| ,|, ")
+  names(genes)=rownames(tcell_list)
+  ds=ileum_ldm$dataset$ds[[3]]
+  byvec=rep(0,nrow(ds))
+  names(byvec)=rownames(ds)
+  for (i in 1:length(genes)){
+    print(i)
+    byvec[genes[[i]]]=names(genes)[i]
+  }
+  clusters=unlist(ileum_ldm$cluster_sets$T)
+  tcells=intersect(colnames(ds),names(ileum_ldm$dataset$cell_to_cluster)[ileum_ldm$dataset$cell_to_cluster%in%clusters])
+  l=list()
+  
+  for (i in clusters){
+    mask=tcells[ileum_ldm$dataset$cell_to_cluster[tcells]==i]
+    if (ncell_per_cluster<length(mask)){
+      l[[i]]=sample(mask,size = ncell_per_cluster,replace = F)
+    }
+    else{
+      l[[i]]=mask
+    }
+  }
+  tcells=unlist(l)
+  
+  
+  scores=t(aggregate.Matrix(ds[,tcells],groupings = byvec,fun="mean"))[,-1]/1000
+  scores=as.matrix(scores[order(match(ileum_ldm$dataset$cell_to_cluster[tcells],ileum_ldm$cluster_order)),])
+  normed_scores=scores/colSums(scores)
   reg=1e-6
-  thresh=7
-  mask=log2((reg+rowMaxs(ileum_ldm$model$models))/(reg+rowMins(ileum_ldm$model$models)))>thresh&rowMaxs(ileum_ldm$model$models)<max_exprssion
-  sum(mask)
-  m=ileum_ldm$model$models
-  m=log2((reg+m)/(reg+rowMeans(m)))
-  cormat=cor(ileum_ldm$model$models[mask,],method="pearson")
-  #ord=hclust(as.dist(1-cormat))$order
-  ord=ileum_ldm$cluster_order
-  open_plot("output/supp_figures/",fn = "figure_s1h_expression_profiles_corr",plot_type = "pdf",nrow(cormat)/6,height =ncol(cormat)/6)
-  par(mar=c(7,7,1,1))
-  image(cormat[ord,ord],col=colorRampPalette(c("blue","white","red"))(100),breaks=c(-1,seq(-1,1,l=99),1),axes=F)
-  mtext(text = ileum_ldm$clustAnnots[ord],side = 1,at = seq(0,1,l=nrow(cormat)),las=2,cex=.7)
-  mtext(text = ileum_ldm$clustAnnots[ord],side = 2,at = seq(0,1,l=ncol(cormat)),las=2,cex=.7)
+  normed_scores=t(log2((t(normed_scores)+reg)/(apply(normed_scores,2,function(x){quantile(x[x>0],.75)})+reg)))
+  normed_scores=normed_scores[,get_order(seriate(as.dist(1-cor(normed_scores)),method="GW"))]
+  #normed_scores=normed_scores[,c("Cycling","CD8_Cytotoxic","Tissue_resident_memory","Regulatory","Naive_CM")]]
+  open_plot(path=main_figures_path,fn = "figure_2e",plot_type = "png",width = 2400,height = 500)
+  par(mar=c(1,1,3,20))
+  zlim=c(-1,1)
+  image(normed_scores,col=colgrad_abs,,axes=F,breaks=c(-100,seq(zlim[1],zlim[2],l=99),100))
+  mtext(colnames(normed_scores),4,at = seq(0,1,l=ncol(normed_scores)),las=2,cex=2,line=0.5)
+  mtext(intersect(ileum_ldm$cluster_order,clusters),3,at = seq(par()$usr[1],par()$usr[2],l=length(clusters)+1)[-1]-.5/(length(clusters)+1),cex=2,line=.5)
+  abline(v=seq(par()$usr[1],par()$usr[2],l=length(clusters)+1),col="gray",lwd=4)
+  close_plot()
+  
+  open_plot(path = main_figures_path,fn="figure_2e_colorscale",plot_type = "png",width = 200,height =50)
+  par(mar=c(2,1,0,1))
+  image(matrix(seq(zlim[1],zlim[2],l=100),,1),col=colgrad_abs,axes=F,breaks=seq(zlim[1],zlim[2],l=101))
+  axis(1,at=seq(0,1,l=5),labels = seq(zlim[1],zlim[2],l=5),lwd = 2)
   close_plot()
   
 }
 
-
-make_tf_truth=function(){
-  tf_list_s=paste(unique(read.csv("input/Gene lists/Human_TFs_Lambert_et_al_Cell_2018.csv",stringsAsFactors = F)[,1]),collapse=",")
-  tf_list_adj=adjust_gene_names(tf_list_s,row.names(ileum_ldm$model$models))
-  tf_list_adj=unique(tf_list_adj[tf_list_adj%in%rownames(ileum_ldm$model$models)])
-  reg=1e-5
-  tf_list=tf_list_adj[rowMaxs(ileum_ldm$model$models[tf_list_adj,])>1e-4&log2((reg+rowMaxs(ileum_ldm$model$models[tf_list_adj,]))/(reg+apply(ileum_ldm$model$models[tf_list_adj,],1,quantile,.7)))>1]
-  
-  make_truth_plot(clusters = ileum_ldm$cluster_order[ileum_ldm$cluster_order%in%colnames(ileum_ldm$model$models)],gene_list =tf_list,path="output/supp_figures/",figure_fn ="truth_tfs",reorder_genes = T,gene_text_cex = 1.5,seperatorBars_lwd=1,zlim = c(0,3),ncell_per_cluster = 100)
-}
 
 
 # correlation_between_subtypes_axcross inflamed samples
@@ -210,6 +233,17 @@ make_avg_heatmaps=function(zlim=c(-2,3)){
 
 }
 
+# Gene modules could be slightly differenet between runs due to random seeding
+run_gene_modules_analysis=function(){
+  genes_to_exclude=c(grep("RP",rownames(ileum_ldm$dataset$umitab),val=T),grep("MT-",rownames(ileum_ldm$dataset$umitab),val=T))
+  cormat=gene_cor_analysis(ileum_ldm,"2000",.1,30,genes_to_exclude=genes_to_exclude,clusters=unlist(ileum_ldm$cluster_sets$T),samples = setdiff(c(inflamed_samples,uninflamed_samples),c("68","69")))
+  parse_modules(ileum_ldm,cormat,"2000","ileum_T",nmods =50,figures_path=supp_figures_path,tables_path = tables_path,zlim = c(-.5,.5))
+  
+  genes_to_exclude=c(grep("RP",rownames(ileum_ldm$dataset$umitab),val=T),grep("MT-",rownames(ileum_ldm$dataset$umitab),val=T))
+  cormat=gene_cor_analysis(ileum_ldm,"2000",.1,30,genes_to_exclude=genes_to_exclude,clusters=unlist(ileum_ldm$cluster_sets$MNP),samples = setdiff(c(inflamed_samples,uninflamed_samples),c("68","69")))
+  parse_modules(ileum_ldm,cormat,"2000","ileum_MNP",nmods =50,figures_path=supp_figures_path,tables_path = tables_path,zlim = c(-.5,.5))
+  
+}
 
 
 numbers_figures2=function(){
@@ -251,10 +285,10 @@ table_s9=function(){
 make_figure2=function(){
   make_avg_heatmaps()
   
-  freq_barplot("figure_2i_MNP_inf_uninf_freq",cell_type = "MNP")
-  freq_barplot("figure_2i_T_inf_uninf_freq",cell_type = "T")
-  freq_barplot("figure_2i_Plasma_inf_uninf_freq",cell_type = "Plasma")
-  freq_barplot("figure_2i_Stromal_inf_uninf_freq",cell_type = "Stromal")
+  freq_barplot("figure_2i_MNP",cell_type = "MNP")
+  freq_barplot("figure_2i_T",cell_type = "T")
+  freq_barplot("figure_2i_Plasma",cell_type = "Plasma")
+  freq_barplot("figure_2i_Stromal",cell_type = "Stromal")
   
   #ILC_inf_uninf_freq
   freq_barplot("figure_S4g",cell_type = "ILC")
@@ -274,7 +308,12 @@ make_figure2=function(){
   make_truth_plot(clusters = unlist(ileum_ldm$cluster_sets$Stromal),gene_list_fn ="gene_list_figure_2g.txt" ,figure_fn ="figure_2g",gene_list_path=gene_list_path,path=main_figures_path)
   print(numbers_figures2())
   table_s9()
+  figure_2e()
   figure_2j()
+  figure_s2e()
+  #s5a-d
+  make_inf_uninf_freq_barplot()
+  run_gene_modules_analysis()
 }
 
 

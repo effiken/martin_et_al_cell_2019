@@ -222,7 +222,7 @@ figure_1g=function(){
 
 # pca analysis
 
-figure_1h_s2g=function(){
+figure_1h_s2f_s2g=function(){
   
   reg=1e-3
   mat_inf_freq= t(do.call(cbind,normalize_by_clusterset_frequency(ileum_ldm$dataset,inflamed_samples_filtered,cluster_sets = ileum_ldm$cluster_sets[setdiff(names(ileum_ldm$cluster_sets),"Mast")] ,pool_subtype=T,reg=reg)))
@@ -236,7 +236,27 @@ figure_1h_s2g=function(){
   pca_res=princomp(t(z[zmask,]))
   pca_scores=pca_res$scores
   pca_loadings=pca_res$loadings
- 
+
+  plot_one_pca=function(xi,yi,with_labels=T){
+    col='grey'
+    #col=pat_cols[pat]
+    
+    
+    par(mar=c(5,5,3,3))
+    ylim=c(min(unclass(pca_scores[,yi])),0.03+max(unclass(pca_scores[,yi])))
+    xlim=range(unclass(pca_scores[,xi]))
+    inf_mask=1:ncol(mat_inf_freq)
+    plot(unclass(pca_scores[inf_mask,c(xi,yi)]),col=0,pch=16,ylim=ylim,xlim=xlim,panel.first=grid(lty=1))
+    #   library(shape)
+    #  pat=2-sample_to_patient[c(inf_pat1,inf_pat2)]%in%pat1
+    arrows(unclass(pca_scores[-1*inf_mask,xi]),unclass(pca_scores[-1*inf_mask,yi]),unclass(pca_scores[inf_mask,xi]),unclass(pca_scores[inf_mask,yi]),col =col,lty=1,lwd=0.5,length = 0)
+    if (with_labels){
+      text(unclass(pca_scores[inf_mask,xi]),unclass(pca_scores[inf_mask,yi])+.3,labels = gsub("rp ","",sample_to_patient[gsub(pattern = "rp | inf| uninf",replacement = "",rownames(pca_scores)[inf_mask])]),cex=.8)
+    }
+    points(unclass(pca_scores[-1*inf_mask,xi]),unclass(pca_scores[-1*inf_mask,yi]),pch=20,cex=1.5,col="cornflowerblue")
+    points(unclass(pca_scores[1*inf_mask,xi]),unclass(pca_scores[1*inf_mask,yi]),pch=20,cex=1.5,col=2)
+    legend("topleft",legend = c("Inflamed","Uninflamed"),col = c(2,"cornflowerblue"),pch=20,cex=1,pt.cex = 1.5)
+  }
   
   plot_one_pca_inf_uninf=function(xi,with_labels=T){
     col='grey'
@@ -259,6 +279,7 @@ figure_1h_s2g=function(){
   }
   
   
+  
   open_plot(path=main_figures_path,fn="figure_1h_with_labels",plot_type = "pdf",width = 5,height = 5)
   plot_one_pca_inf_uninf(1)
   title(paste(round(100*sum(pca_res$sdev[1]^2)/sum(pca_res$sdev^2),digits=1),"% of variance explained by PC1"))
@@ -269,7 +290,16 @@ figure_1h_s2g=function(){
   title(paste(round(100*sum(pca_res$sdev[1]^2)/sum(pca_res$sdev^2),digits=1),"% of variance explained by PC1"),cex=.7)
   close_plot()
   
- 
+  open_plot(path=supp_figures_path,fn="figure_s2f_with_labels",plot_type = "pdf",width = 5,height = 5)
+  #  plot_one_pca(1,2)
+  plot_one_pca(1,2)
+  title(paste(round(100*sum(pca_res$sdev[1:2]^2)/sum(pca_res$sdev^2),digits=1),"% of variance explained by PC1+PC2"))
+  close_plot()
+  
+  open_plot(path=supp_figures_path,fn="figure_s2f",plot_type = "pdf",width = 5,height = 5)
+  plot_one_pca(1,2,with_labels = F)
+  title(paste(round(100*sum(pca_res$sdev[1:2]^2)/sum(pca_res$sdev^2),digits=1),"% of variance explained by PC1+PC2"),cex=.7)
+  close_plot()
   
   
   v=cluster_to_cluster_set[names(cluster_to_subtype1)]
@@ -558,6 +588,9 @@ figure_1b=function(){
   close_plot()
 }
 
+
+
+
 # stats per sample
 table_s2=function(){
   annots=read.csv(paste(pipeline_path,"input/tables/Cohort_technical_summary.csv",sep="/"),stringsAsFactors = F)
@@ -626,7 +659,7 @@ make_figure1=function(){
   
   figure_1e()
   figure_1g()
-  figure_1h_s2g()
+  figure_1h_s2f_s2g()
 
   figure_s1a()
   figure_s1b_c()
