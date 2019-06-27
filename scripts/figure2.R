@@ -30,33 +30,7 @@ make_figure_correlation_between_subtypes=function(path,prefix,lm,selected_sample
   close_plot()
   
 }
-# distance_between_inf_uninf
-figure_s2e=function(){
-  pool_subtypes_frequencies=function (lm, samples, cluster_sets, pool_subtype = T) {
-    cluster_sets=cluster_sets[!names(cluster_sets)%in%"Not good"]
-    get_freqs=function(lm,selected_samples){
-      scRNA_tab=get_cell_counts(lm,selected_samples)
-      freqs=(scRNA_tab)/rowSums(scRNA_tab)
-      return(freqs)
-    }
-    freqs = get_freqs(lm, samples)
-    pool_subtype_freqs = function(one_subtype) {
-      return(rowSums(freqs[, unlist(one_subtype), drop = F]))
-    }
-    pool_one_clusterset = function(one_clusterset) {
-      subtypes_freqs = sapply(one_clusterset,  pool_subtype_freqs)
-      colnames(subtypes_freqs) = names(one_clusterset)
-      return(subtypes_freqs)
-    }
-    return(sapply(cluster_sets, pool_one_clusterset, simplify = F))
-  }
-  freqs_inf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,inflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
-  freqs_uninf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,uninflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
-  open_plot(path = main_figures_path,fn = "figure_s2e",plot_type = "pdf",6,6)
-  par(mar=c(5,5,1,1))
-  barplot(sqrt(colSums(((freqs_inf-freqs_uninf)/((freqs_inf+freqs_uninf)/2))^2)),ylim=c(0,.8),ylab="dissimilarity (inf vs uninf",border=F,cex.names = .7)
-  close_plot()
-}
+
 
 
 
@@ -194,7 +168,6 @@ make_avg_heatmaps=function(zlim=c(-2,3)){
     }
     
     
-    
     #avg_heatmap_MNP
     genes=read_genes("gene_list_figure_2a.txt")
     genes=intersect(genes,rownames(ileum_ldm$model$models))
@@ -227,6 +200,15 @@ make_avg_heatmaps=function(zlim=c(-2,3)){
     genes=intersect(genes,rownames(ileum_ldm$model$models))
     clusters=unlist(c(ileum_ldm$cluster_sets$Stromal$`CD36+ endothelial cells`,ileum_ldm$cluster_sets$Stromal$`ACKR1+ endothelial cells`,ileum_ldm$cluster_sets$Stromal$Lymphatics,ileum_ldm$cluster_sets$Stromal$`Smooth muscle cells`,ileum_ldm$cluster_sets$Stromal$Fibroblasts,ileum_ldm$cluster_sets$Stromal$`Activated fibroblasts`))
     open_plot(main_figures_path,fn='figure_2h',plot_type = "pdf",width = 3.5,height = 1.5)
+    par(mar=c(4,5,1,1))
+    plot_avg_heatmap(ileum_ldm$model$models[genes,clusters],genes=genes,gene.cols = 1,clusters = clusters,clusters_text = "",annots = cluster_to_subtype1[clusters],zlim=zlim,main_title = "",Relative_or_Absolute = "Relative",colgrad = colgrad_rel,reg=1e-6,cex.genes = .7,cex.clusters = .5,line.genes = .1)
+    close_plot()
+    
+    # avg_heatmap_stromal_cells
+    genes=read_genes("gene_list_figure_s3b.txt")
+    genes=intersect(genes,rownames(ileum_ldm$model$models))
+    clusters=c("41","15","2","8","31","24","32","40")
+    open_plot(supp_figures_path,fn='figure_s3b',plot_type = "pdf",width = 3.5,height = 1.5)
     par(mar=c(4,5,1,1))
     plot_avg_heatmap(ileum_ldm$model$models[genes,clusters],genes=genes,gene.cols = 1,clusters = clusters,clusters_text = "",annots = cluster_to_subtype1[clusters],zlim=zlim,main_title = "",Relative_or_Absolute = "Relative",colgrad = colgrad_rel,reg=1e-6,cex.genes = .7,cex.clusters = .5,line.genes = .1)
     close_plot()
@@ -283,6 +265,8 @@ table_s9=function(){
 
 
 make_figure2=function(){
+  message("Making Fig 1, Fig S1-2 and tables 2-3")
+  
   make_avg_heatmaps()
   
   freq_barplot("figure_2i_MNP",cell_type = "MNP")
@@ -310,7 +294,7 @@ make_figure2=function(){
   table_s9()
   figure_2e()
   figure_2j()
-  figure_s2e()
+
   #s5a-d
   make_inf_uninf_freq_barplot()
   run_gene_modules_analysis()

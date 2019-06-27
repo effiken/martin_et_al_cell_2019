@@ -8,7 +8,7 @@ plot_subtype_freqs_per_patient=function(freq_norm,celltype,plot_legend=T,ordc=NU
     rownames(freq_norm[[celltype]])=samp_labels
   }
   m=freq_norm[[celltype]][ordp,ordc]
-  #cols=brewer.pal(length(ordc),"Set3")
+
   if (is.null(cols)){
     cols=alt_cols[1:ncol(m)]
   }else{

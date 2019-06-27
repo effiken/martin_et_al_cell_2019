@@ -9,6 +9,13 @@ download_files=function(pipeline_path){
              
   download.file("https://www.dropbox.com/s/abc18m5sb20xv68/model_and_samples_ileum.rd?dl=1",destfile = paste(pipeline_path,"input","clustered_scRNA_data","model_and_samples_ileum.rd",sep="/"))
   download.file("https://www.dropbox.com/s/79wdka2vtgv7lrr/model_and_samples_blood.rd?dl=1",destfile = paste(pipeline_path,"input","clustered_scRNA_data","model_and_samples_blood.rd",sep="/"))
+  
+  
+  dir.create(paste(pipeline_path,"input","external_cohorts_data",sep="/"),showWarnings = F)
+  download.file("https://www.dropbox.com/s/4std4kvro7azpxv/certifi.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","certifi.rd",sep="/"))
+  download.file("https://www.dropbox.com/s/3ttak24tiqcrbck/risk.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","risk.rd",sep="/"))
+  download.file("https://www.dropbox.com/s/pojwdxcdbexhkxw/uniti-1.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","uniti-1.rd",sep="/"))
+  download.file("https://www.dropbox.com/s/r5nu2mpxws8ryml/uniti-2.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","uniti-2i.rd",sep="/"))
 }
 
 get_edges=function(l,name=NA){
@@ -120,7 +127,6 @@ create_global_vars=function(pipeline_path){
   sample_to_patient<<-gsub("CD Biop","bp ",sample_tab$Patient.ID)
   names(sample_to_patient)<<-sample_tab$index
   sample_names<<-names(sample_to_patient)
-  print(sample_to_patient)  
   patientid_to_gridid<<-unique(sample_tab$GRID.ID)
   names(patientid_to_gridid)<<-sample_to_patient[match(unique(sample_tab$GRID.ID),sample_tab$GRID.ID)]
   
@@ -244,67 +250,22 @@ main=function(pipeline_path,download_data=T,only_load_data=F,make_figures=T){
     dir.create(paste(pipeline_path,"output/supp_figures",sep="/"))
     dir.create(paste(pipeline_path,"output/tables",sep="/"))
     source(paste(pipeline_path,"scripts/figure1.R",sep="/"))
-  #  my_source("figure2.R")
-  #  my_source("figure3.R")
+    source(paste(pipeline_path,"scripts/figure2.R",sep="/"))
+    source(paste(pipeline_path,"scripts/figure3.R",sep="/"))
     
+  
+    message("Making figure 1")
     make_figure1()
-  #  make_figure2()
-  #  make_figure3()
+    
+    message("Making figure 2")
+    make_figure2()
+    
+    message("Making figure 3")
+    make_figure3()
   #  my_source("chem_cyt3.R")
     
   }
 }
-
-
-#get_freqs=function(lm,selected_samples){
-#  scRNA_tab=get_cell_counts(lm,selected_samples)
-#  freqs=(scRNA_tab)/rowSums(scRNA_tab)
-#
-#  return(freqs)
-#}
-
-#get_cell_counts=function(lm,selected_samples){
-#  scRNA_tab=table(lm$dataset$cell_to_cluster,(lm$dataset$cell_to_sample))
-#  not_good_clusters=names(lm$clustAnnots[rownames(scRNA_tab)])[grep("Not good",lm$clustAnnots[rownames(scRNA_tab)])]
-#  scRNA_tab=scRNA_tab[setdiff(rownames(scRNA_tab),not_good_clusters),as.character(selected_samples)]
-#  
-#  scRNA_tab=t(scRNA_tab)
-#  rownames(scRNA_tab)=sample_to_patient[rownames(scRNA_tab)]
-#  return(scRNA_tab)
-#}
-
-#normalize_by_clusterset_frequency=function(lm,selected_samples=NULL,pool_subtype=T,reg=0){
-#  if (is.null(selected_samples)){
-#    selected_samples=lm$dataset$samples
-#  }
-#  freqs=get_freqs(lm,selected_samples)
-#  
-#  pool_subtype_freqs=function(one_subtype){
-#    return(rowSums(freqs[,unlist(one_subtype),drop=F]))
-#  }
-#  
-#  norm_one_clusterset=function(one_clusterset){
-#   
-#    if (pool_subtype==F){
-#      tot=rowSums(reg+freqs[,unlist(one_clusterset),drop=F])
-#      norm_subtypes_freqs=reg+freqs[,unlist(one_clusterset),drop=F]/(tot)
-#    } 
-#    else {
-#      if (length(unlist(one_clusterset))==1){
-#        norm_subtypes_freqs=reg+freqs[,unlist(one_clusterset),drop=F]
-#      }
-#      else {
-#          subtypes_freqs=reg+sapply(one_clusterset,pool_subtype_freqs)
-#          tot=rowSums(subtypes_freqs)
-#          norm_subtypes_freqs=subtypes_freqs/(tot)
-#      }
-#      colnames(norm_subtypes_freqs)=names(one_clusterset)
-#    }
-#    return(norm_subtypes_freqs)
-#  }
-#  return(sapply(lm$cluster_sets[names(lm$cluster_sets)!="Not good"],norm_one_clusterset))
-
-#}
 
 
 normalize_by_clusterset_frequency2=function(lm,selected_samples){

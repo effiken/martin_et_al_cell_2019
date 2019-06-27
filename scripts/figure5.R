@@ -1,4 +1,4 @@
-source(paste(pipeline_path,"/scripts/load_bulk_datasets.R",sep=""))
+
 cluster_sets_for_heatmaps=c("Inf. Macrophages","mature cDCs","Resident Macrophages","Plasma cells_IgG","Plasma cells_IgA","Endothelial cells","Fibroblasts","Resident Memory")
 # screen for marker genes diff. expressed between pat1 and pat2.
 prediction_thresh<<-0.25
@@ -20,6 +20,10 @@ igv=grep("IGLV|IGKV|IGHV",rownames(ileum_ldm$dataset$umitab),val=T)
 metallothionein=grep("^MT1",rownames(ileum_ldm$dataset$umitab),val=T)
 excluded_genes=c(malat,xist,jchain,hla,mts,igv,metallothionein)
 
+
+de_res=read.csv("~/GoogleDrive/work/shared/analysis/analysis_iCD_paper_2018/output/tables/DE_patterns/DE_inf_pat1_vs_pat2_total.csv",row.names = 1)
+
+
 sample_set_list=list(
   list(datasets="CERTIFI",diagnosises="CD",tissues=c("Ileum")),
   list(datasets="UNITI-1",diagnosises="CD",tissues=c("Ileum")),
@@ -27,7 +31,116 @@ sample_set_list=list(
   list(datasets="RISK",diagnosises="CD",tissues=c("Ileum"))
 )
 
-de_res=read.csv("~/GoogleDrive/work/shared/analysis/analysis_iCD_paper_2018/output/tables/DE_patterns/DE_inf_pat1_vs_pat2_total.csv",row.names = 1)
+
+
+read_RISK=function(genes){
+  path="~/GoogleDrive/work/shared/data/RISK data files/"
+  fn="output/bulk/risk.rd"
+  env=new.env()
+  load(file=fn,envir=env)
+  m=env$m
+  sample_tab=env$sample_tab
+  clin2=env$clin2
+  pcdai=env$pcdai
+  mask=env$mask
+  
+  return(list(raw=m[,mask],design=sample_tab[mask,],clin=clin2[mask,],pcdai=pcdai))
+}
+
+
+read_one_microarray_dataset=function(path,fn,genes,reg=10,remove_first_column=F,log_transform=T){
+  if (tail(strsplit(fn,"\\.")[[1]],1)=="csv"){
+    exprs_tab=read.csv(paste(path,fn,sep=""),row.names = 1)
+  }
+  else{
+    exprs_tab=read.table(paste(path,fn,sep=""))
+  }
+  if (remove_first_column){
+    exprs_tab=exprs_tab[,-1]
+  }
+  plot(reg+rowMeans(exprs_tab[,sample(colnames(exprs_tab),10)]),reg+rowMeans(exprs_tab[,sample(colnames(exprs_tab),10)]),log="xy",main="Before log transform")
+  if (log_transform){
+    exprs_tab=log10(reg+exprs_tab)
+  }
+  
+  colnames(exprs_tab)=gsub(".CEL","",colnames(exprs_tab))
+  return(exprs_tab[genes,])
+}
+
+
+
+
+
+
+read_certifi=function(genes){
+  path="~/GoogleDrive/work/shared/data/public/human/Peters_et_al_NG_2017/GSE100833_RAW/"
+  
+  fn=paste(pipeline_path,"input/external_cohorts_data/certifi.rd",sep="")
+  
+  env=new.env()
+  load(file=fn,envir=env)
+  exprs_tab=env$exprs_tab
+  annots=env$annots
+  
+  return(list(raw=exprs_tab,design=annots))
+}
+
+
+
+read_uniti1=function(load_text=F,genes){
+  path="~/GoogleDrive/work/shared/data/Janssen/"
+  
+  fn="output/bulk/uniti-1.rd"
+  if (load_text){
+    
+    exprs_tab1=read_one_microarray_dataset(path="input/microarray/output/",fn="expr_UNITI-1.csv",genes,remove_first_column = F)
+    
+    annots1=read.csv(paste(path,"UNITI-1 Biopsy/UNITI1 biopsy_wk0wk8_347s_CDAI_CRP_FCAL_SESCD.csv",sep=""),stringsAsFactors = F,row.names = 1)
+    rownames(annots1)=gsub("\\.|-","_",rownames(annots1))
+    colnames(exprs_tab1)=gsub("\\.|-","_",colnames(exprs_tab1))
+    exprs_tab1=exprs_tab1[,rownames(annots1)]
+    
+    save(file=fn,exprs_tab1,annots1)
+  }
+  else {
+    env=new.env()
+    load(file=fn,envir=env)
+    exprs_tab1=env$exprs_tab1
+    annots1=env$annots1
+  }
+  
+  return(list(raw=exprs_tab1,design=annots1))
+}
+
+
+read_uniti2=function(load_text=F,genes){
+  path="~/GoogleDrive/work/shared/data/Janssen/"
+  
+  fn="output/bulk/uniti-2.rd"
+  if (load_text){
+    exprs_tab2=read_one_microarray_dataset(path="input/microarray/output/",fn="expr_UNITI-2.csv",genes,remove_first_column = F)
+    
+    annots2=read.csv(paste(path,"UNITI-2/UNITI2 biopsy_wk0wk8_582s_CDAI_CRP_FCAL_SESCD.csv",sep=""),stringsAsFactors = F,row.names = 1)[,-2]
+    rownames(annots2)=gsub("\\.|-","_",rownames(annots2))
+    colnames(exprs_tab2)=gsub("\\.|-","_",colnames(exprs_tab2))
+    
+    exprs_tab2=exprs_tab2[,rownames(annots2)]
+    
+    
+    save(file=fn,exprs_tab2,annots2)
+  }
+  else {
+    env=new.env()
+    load(file=fn,envir=env)
+    exprs_tab2=env$exprs_tab2
+    annots2=env$annots2
+  }
+  
+  return(list(raw=exprs_tab2,design=annots2))
+}
+
+
+
 
 quantile_normalization=function(raw_data,reg=10){
   m=t(t(raw_data)/colSums(raw_data))
@@ -834,12 +947,7 @@ select_genes=function(max_per_clusterset=30,thresh_cluster=0.5,thresh_pattern1=1
 #######################################################################################################################################
 
 
-main_bulk=function(load_data=F,read_data_from_text=F,init=F){
-  
-  if (init){
-    source('~/GoogleDrive/work/shared/analysis/analysis_iCD_paper_2018/scripts/main.R')
-    main(T,F,F,F)
-  }
+main_bulk=function(load_data=F,read_data_from_text=F){
 
   
   lm=ileum_ldm

@@ -151,7 +151,7 @@ cytof_comparison=function(){
 
 }
 # Cell-lineage distribution barplot
-figure_1e=function(){
+figure_1d=function(){
   scrna_inf_perc=get_pooled_freqs(inflamed_samples,c("T","ILC","Plasma","B","MNP","pDC","Mast","Stromal"))
   scrna_uninf_perc=get_pooled_freqs(uninflamed_samples,c("T","ILC","Plasma","B","MNP","pDC","Mast","Stromal"))
   scrna_uninf_perc=scrna_uninf_perc[,order(scrna_inf_perc[1,])]
@@ -160,7 +160,7 @@ figure_1e=function(){
   m[,(1:ncol(scrna_inf_perc))*2-1]=scrna_inf_perc
   m[,(1:ncol(scrna_inf_perc))*2]=scrna_uninf_perc
   
-  open_plot(path=main_figures_path,fn = "figure_1e",plot_type = "pdf",width = 4,height = 4)
+  open_plot(path=main_figures_path,fn = "figure_1d",plot_type = "pdf",width = 4,height = 4)
   par(mar=c(6,3,1,1),lwd = .3)
   barplot(m,col=celltypes_cols1[rownames(m)],las=2,cex.axis=.8,cex.names=.6,space = c(.8,.2))
   grid(nx=NA,ny=NULL,lty=1)
@@ -168,17 +168,20 @@ figure_1e=function(){
   close_plot()
 }
 
+
+get_cell_counts=function(lm,selected_samples){
+  scRNA_tab=table(lm$dataset$cell_to_cluster,(lm$dataset$cell_to_sample))
+  not_good_clusters=names(lm$clustAnnots[rownames(scRNA_tab)])[grep("Not good",lm$clustAnnots[rownames(scRNA_tab)])]
+  scRNA_tab=scRNA_tab[setdiff(rownames(scRNA_tab),not_good_clusters),as.character(selected_samples)]
+  
+  scRNA_tab=t(scRNA_tab)
+  rownames(scRNA_tab)=sample_to_patient[rownames(scRNA_tab)]
+  return(scRNA_tab)
+}
+
 # Clusters_fractions_barplots_inflamded_vs_uninflamed
 figure_1g=function(){
-  get_cell_counts=function(lm,selected_samples){
-      scRNA_tab=table(lm$dataset$cell_to_cluster,(lm$dataset$cell_to_sample))
-      not_good_clusters=names(lm$clustAnnots[rownames(scRNA_tab)])[grep("Not good",lm$clustAnnots[rownames(scRNA_tab)])]
-      scRNA_tab=scRNA_tab[setdiff(rownames(scRNA_tab),not_good_clusters),as.character(selected_samples)]
-      
-      scRNA_tab=t(scRNA_tab)
-      rownames(scRNA_tab)=sample_to_patient[rownames(scRNA_tab)]
-      return(scRNA_tab)
-    }
+  
   
   get_freqs=function(lm,selected_samples){
     scRNA_tab=get_cell_counts(lm,selected_samples)
@@ -218,7 +221,33 @@ figure_1g=function(){
   close_plot()
 }
 
-
+# distance_between_inf_uninf
+figure_s2e=function(){
+  pool_subtypes_frequencies=function (lm, samples, cluster_sets, pool_subtype = T) {
+    cluster_sets=cluster_sets[!names(cluster_sets)%in%"Not good"]
+    get_freqs=function(lm,selected_samples){
+      scRNA_tab=get_cell_counts(lm,selected_samples)
+      freqs=(scRNA_tab)/rowSums(scRNA_tab)
+      return(freqs)
+    }
+    freqs = get_freqs(lm, samples)
+    pool_subtype_freqs = function(one_subtype) {
+      return(rowSums(freqs[, unlist(one_subtype), drop = F]))
+    }
+    pool_one_clusterset = function(one_clusterset) {
+      subtypes_freqs = sapply(one_clusterset,  pool_subtype_freqs)
+      colnames(subtypes_freqs) = names(one_clusterset)
+      return(subtypes_freqs)
+    }
+    return(sapply(cluster_sets, pool_one_clusterset, simplify = F))
+  }
+  freqs_inf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,inflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
+  freqs_uninf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,uninflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
+  open_plot(path = main_figures_path,fn = "figure_s2e",plot_type = "pdf",6,6)
+  par(mar=c(5,5,1,1))
+  barplot(sqrt(colSums(((freqs_inf-freqs_uninf)/((freqs_inf+freqs_uninf)/2))^2)),ylim=c(0,.8),ylab="dissimilarity (inf vs uninf",border=F,cex.names = .7)
+  close_plot()
+}
 
 # pca analysis
 
@@ -232,14 +261,12 @@ figure_1h_s2f_s2g=function(){
   
   z=log2(cbind(mat_inf_freq,mat_uninf_freq));z2=apply(z,1,quantile,c(.15,.85))
   zmask=z2[2,]-z2[1,]>2
-  #print(sum(zmask))
   pca_res=princomp(t(z[zmask,]))
   pca_scores=pca_res$scores
   pca_loadings=pca_res$loadings
 
   plot_one_pca=function(xi,yi,with_labels=T){
     col='grey'
-    #col=pat_cols[pat]
     
     
     par(mar=c(5,5,3,3))
@@ -247,9 +274,7 @@ figure_1h_s2f_s2g=function(){
     xlim=range(unclass(pca_scores[,xi]))
     inf_mask=1:ncol(mat_inf_freq)
     plot(unclass(pca_scores[inf_mask,c(xi,yi)]),col=0,pch=16,ylim=ylim,xlim=xlim,panel.first=grid(lty=1))
-    #   library(shape)
-    #  pat=2-sample_to_patient[c(inf_pat1,inf_pat2)]%in%pat1
-    arrows(unclass(pca_scores[-1*inf_mask,xi]),unclass(pca_scores[-1*inf_mask,yi]),unclass(pca_scores[inf_mask,xi]),unclass(pca_scores[inf_mask,yi]),col =col,lty=1,lwd=0.5,length = 0)
+     arrows(unclass(pca_scores[-1*inf_mask,xi]),unclass(pca_scores[-1*inf_mask,yi]),unclass(pca_scores[inf_mask,xi]),unclass(pca_scores[inf_mask,yi]),col =col,lty=1,lwd=0.5,length = 0)
     if (with_labels){
       text(unclass(pca_scores[inf_mask,xi]),unclass(pca_scores[inf_mask,yi])+.3,labels = gsub("rp ","",sample_to_patient[gsub(pattern = "rp | inf| uninf",replacement = "",rownames(pca_scores)[inf_mask])]),cex=.8)
     }
@@ -260,7 +285,6 @@ figure_1h_s2f_s2g=function(){
   
   plot_one_pca_inf_uninf=function(xi,with_labels=T){
     col='grey'
-    #col=pat_cols[pat]
     inf_mask=1:ncol(mat_inf_freq)
     scores_inf=unclass(pca_scores[inf_mask,xi])
     scores_uninf=unclass(pca_scores[-inf_mask,xi])
@@ -652,15 +676,18 @@ make_gene_reference_table=function(){
 }
 
 make_figure1=function(){
+  #also making supp figures 1-2 and supp tables 2-3
+  message("Making Fig 1, Fig S1-2 and tables 2-3")
+  
   figure_1b()
-  
+  # figure 1c, 1f:
   make_truth_plots()
+  figure_1d()
+  #figure 1e s2b:
   cytof_comparison()
-  
-  figure_1e()
   figure_1g()
   figure_1h_s2f_s2g()
-
+  
   figure_s1a()
   figure_s1b_c()
   figure_s1d()
@@ -669,7 +696,8 @@ make_figure1=function(){
   # figure s1i   - clustering
   figure_s1j()
   figure_s1k()
- 
+  
+  figure_s2e()
   table_s2()
   table_s3()
 }
