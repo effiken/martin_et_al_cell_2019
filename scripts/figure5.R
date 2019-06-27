@@ -34,8 +34,8 @@ sample_set_list=list(
 
 
 read_RISK=function(genes){
-  path="~/GoogleDrive/work/shared/data/RISK data files/"
-  fn="output/bulk/risk.rd"
+  path=paste(pipeline_path,"input/external_cohorts_data/",sep="")
+  fn=paste(path,"/risk.rd",sep="")
   env=new.env()
   load(file=fn,envir=env)
   m=env$m
@@ -75,7 +75,8 @@ read_one_microarray_dataset=function(path,fn,genes,reg=10,remove_first_column=F,
 read_certifi=function(genes){
   path="~/GoogleDrive/work/shared/data/public/human/Peters_et_al_NG_2017/GSE100833_RAW/"
   
-  fn=paste(pipeline_path,"input/external_cohorts_data/certifi.rd",sep="")
+  path=paste(pipeline_path,"input/external_cohorts_data/",sep="")
+  fn=paste(path,"/certifi.rd",sep="")
   
   env=new.env()
   load(file=fn,envir=env)
@@ -88,9 +89,8 @@ read_certifi=function(genes){
 
 
 read_uniti1=function(load_text=F,genes){
-  path="~/GoogleDrive/work/shared/data/Janssen/"
-  
-  fn="output/bulk/uniti-1.rd"
+  path=paste(pipeline_path,"input/external_cohorts_data/",sep="")
+  fn=paste(path,"/uniti-1.rd",sep="")
   if (load_text){
     
     exprs_tab1=read_one_microarray_dataset(path="input/microarray/output/",fn="expr_UNITI-1.csv",genes,remove_first_column = F)
@@ -114,9 +114,9 @@ read_uniti1=function(load_text=F,genes){
 
 
 read_uniti2=function(load_text=F,genes){
-  path="~/GoogleDrive/work/shared/data/Janssen/"
+  path=paste(pipeline_path,"input/external_cohorts_data/",sep="")
+  fn=paste(path,"/uniti-2.rd",sep="")
   
-  fn="output/bulk/uniti-2.rd"
   if (load_text){
     exprs_tab2=read_one_microarray_dataset(path="input/microarray/output/",fn="expr_UNITI-2.csv",genes,remove_first_column = F)
     
@@ -607,25 +607,13 @@ load_bulk_datasets=function(load_text=F){
   scRNAseq_genes=rownames(ileum_ldm$dataset$umitab)
   l=list()
   message("Loading CERTIFI")
-  l$certifi=read_certifi(genes=scRNAseq_genes,load_text = load_text)
+  l$certifi=read_certifi(genes=scRNAseq_genes)
   message("Loading UNITI-1")
-  l$uniti1=read_uniti1(genes=scRNAseq_genes,load_text = load_text)
+  l$uniti1=read_uniti1(genes=scRNAseq_genes)
   message("Loading UNITI-2")
-  l$uniti2=read_uniti2(genes=scRNAseq_genes,load_text = load_text)
-#  message("Loading MSH")
-#  l$msh=read_msh(genes=scRNAseq_genes,load_text = load_text)
-#  message("Loading Habermann")
-#  habermann=read_habermann(genes=scRNAseq_genes)
-  message("Loading Arijs Plos1")
-  #l$arijs_affy=read_arijs_affy(genes=scRNAseq_genes,load_text = load_text)
-  #l$arijs_frma=read_arijs_frma(genes=scRNAseq_genes,load_text = load_text)
-  l$arijs_plos1=read_arijs_plos1(genes=scRNAseq_genes,load_text = load_text)
-  message("Loading Arijs Gut")
-  l$arijs_gut=read_arijs_gut_2009(genes=scRNAseq_genes,load_text = load_text)
-  message("Loading Toedter 2011")
-  l$toedter=read_toedter_ajg_2011(genes=scRNAseq_genes,load_text = load_text)
+  l$uniti2=read_uniti2(genes=scRNAseq_genes)
   message("Loading RISK")
-  l$risk<-read_RISK(genes=scRNAseq_genes,load_text = load_text)
+  l$risk<-read_RISK(genes=scRNAseq_genes)
 
   for (i in 1:length(l)){
     if (i==1){
@@ -774,7 +762,7 @@ load_bulk_datasets=function(load_text=F){
   risk_raw=matrix(NA,length(genes),ncol(l$risk$raw),dimnames = list(genes,colnames(l$risk$raw)))
   risk_raw[rownames(l$risk$raw),]=as.matrix(log(1+l$risk$raw))
   raw_exprs=cbind(raw_exprs,risk_raw)
-  risk_design=data.frame(dataset="RISK",subject=l$risk$design$RISK.DNA.ID,geo_accesion=NA,sex= sex_conversion[l$risk$design$Gender],diagnosis=diagnosis_conversion[as.character(l$risk$design$Disease.status)],age=l$risk$design$AgeDxYrs.y,tissue="Ileum",status=status_conversion[l$risk$design$Inflammation],deep_ulcer=l$risk$design$Ulceration,BA=NA,treatment=NA,response=l$risk$design$response,B_Dx=l$risk$design$B_Dx,B_Cur=l$risk$design$B_Cur)
+  risk_design=data.frame(dataset="RISK",subject=l$risk$design$RISK.DNA.ID,geo_accesion=l$risk$design$GEO_ID,sex= sex_conversion[l$risk$design$Gender],diagnosis=diagnosis_conversion[as.character(l$risk$design$Disease.status)],age=l$risk$design$AgeDxYrs.y,tissue="Ileum",status=status_conversion[l$risk$design$Inflammation],deep_ulcer=l$risk$design$Ulceration,BA=NA,treatment=NA,response=l$risk$design$response,B_Dx=l$risk$design$B_Dx,B_Cur=l$risk$design$B_Cur)
   rownames(risk_design)=rownames(l$risk$design)
   design=rbind(cbind(design,B_Dx=NA,B_Cur=NA),risk_design)
   clin$risk=cbind(l$risk$clin,l$risk$pcdai)
@@ -947,7 +935,7 @@ select_genes=function(max_per_clusterset=30,thresh_cluster=0.5,thresh_pattern1=1
 #######################################################################################################################################
 
 
-main_bulk=function(load_data=F,read_data_from_text=F){
+main_bulk=function(load_data=F){
 
   
   lm=ileum_ldm
@@ -955,7 +943,7 @@ main_bulk=function(load_data=F,read_data_from_text=F){
   responder_col<<-brew_cols[5]
   non_responder_col<<-brew_cols[4]
   if (load_data){
-    lbd_res<-load_bulk_datasets(load_text = read_data_from_text)
+    lbd_res<-load_bulk_datasets(load_text)
     bulk<<-lbd_res
     #mods<<-read_modules()
     write.csv(file="output/tables/full_bulk_design.csv",bulk$design)

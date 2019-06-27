@@ -15,7 +15,7 @@ download_files=function(pipeline_path){
   download.file("https://www.dropbox.com/s/4std4kvro7azpxv/certifi.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","certifi.rd",sep="/"))
   download.file("https://www.dropbox.com/s/3ttak24tiqcrbck/risk.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","risk.rd",sep="/"))
   download.file("https://www.dropbox.com/s/pojwdxcdbexhkxw/uniti-1.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","uniti-1.rd",sep="/"))
-  download.file("https://www.dropbox.com/s/r5nu2mpxws8ryml/uniti-2.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","uniti-2i.rd",sep="/"))
+  download.file("https://www.dropbox.com/s/r5nu2mpxws8ryml/uniti-2.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","uniti-2.rd",sep="/"))
 }
 
 get_edges=function(l,name=NA){

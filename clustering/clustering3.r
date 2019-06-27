@@ -1,6 +1,5 @@
 library(gplots)
 library(Matrix.utils)
-library(mixtools)
 library(seriation)
 library(scDissector)
 
