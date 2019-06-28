@@ -21,7 +21,6 @@ metallothionein=grep("^MT1",rownames(ileum_ldm$dataset$umitab),val=T)
 excluded_genes=c(malat,xist,jchain,hla,mts,igv,metallothionein)
 
 
-de_res=read.csv("~/GoogleDrive/work/shared/analysis/analysis_iCD_paper_2018/output/tables/DE_patterns/DE_inf_pat1_vs_pat2_total.csv",row.names = 1)
 
 
 sample_set_list=list(
@@ -73,8 +72,7 @@ read_one_microarray_dataset=function(path,fn,genes,reg=10,remove_first_column=F,
 
 
 read_certifi=function(genes){
-  path="~/GoogleDrive/work/shared/data/public/human/Peters_et_al_NG_2017/GSE100833_RAW/"
-  
+
   path=paste(pipeline_path,"input/external_cohorts_data/",sep="")
   fn=paste(path,"/certifi.rd",sep="")
   
@@ -139,29 +137,13 @@ read_uniti2=function(load_text=F,genes){
   return(list(raw=exprs_tab2,design=annots2))
 }
 
-
-
-
-quantile_normalization=function(raw_data,reg=10){
-  m=t(t(raw_data)/colSums(raw_data))
-  ranked=apply(m,2,rank)
-  normed_data=-1*log2(.9999-(reg+ranked)/(reg+nrow(ranked)))
-  return(normed_data)
-}
+##################################################################################################
 
 zscore_trasformation=function(m){
   return((m-rowMeans(m,na.rm=T))/apply(m,1,sd,na.rm=T))
 }
 
 
-get_score_per_gl=function(gl,m){
-  get_avg=function(g){
-    return(colMeans(m[intersect(g,rownames(m)),,drop=F],na.rm=T))
-  }
-  x=sapply(gl,get_avg)
-  colnames(x)=names(gl)
-  return(x)
-}
 
 get_scores=function(g1,g2,m,log_scores=F){
 
@@ -183,14 +165,6 @@ get_scores=function(g1,g2,m,log_scores=F){
 
 
 
-read_modules=function(){
-  tmp_mod_tab=read.table("tables/modules_all_data.txt",stringsAsFactors = F)
-  mods_l=strsplit(tmp_mod_tab[,2],",")
-  names(mods_l)=tmp_mod_tab[,1]
-  mods=rep(names(mods_l),sapply(mods_l,length))
-  names(mods)=unlist(mods_l)
-  return(mods)
-}
 
 
 get_all_zscores=function(m,design,sample_set_list=list()){
@@ -201,103 +175,73 @@ get_all_zscores=function(m,design,sample_set_list=list()){
           design$tissue%in%sample_set_list[[i]]$tissues
     
     if (sum(mask)>=10){
-      message("Zscoring sample set ",i)
       z[,mask]=zscore_trasformation(m[,mask])
     }
-    else{
-    
-      message("Sample set ",i,"was not zscored")
-    }
+
   }
   return(z)
 }
 
 
 
-project_scores=function(m){
-  a=as.matrix(m)
-  rotation=prcomp(a)$rotation[1,]
-  proj<-(a%*%rotation)[,1]
-  if (rotation[1]<0){
-    proj<-proj*-1
-  }
 
-  return(proj)
-}
-
-
-
-plot_dataset=function(dataset_name="",ngenes=100,plot_ulceration=F,plot_bcur=F,genes_to_show=NULL){
+plot_dataset=function(dataset_name="",tissue="Ileum",ngenes=100,genes_to_show=NULL,path=NULL,diagnosis="CD"){
   mask=as.character(bulk$design$dataset)==dataset_name
   statusv=as.character(bulk$design$status)
   statusv[is.na(statusv)]=""
   
-  for (diagnosis in unique(as.character(bulk$design[mask,]$diagnosis))){
-    mask_diagnosis=mask&(as.character(bulk$design$diagnosis)==diagnosis)
-    tissues=unique(as.character(bulk$design[mask_diagnosis,]$tissue))
-    tissues=tissues[!is.na(tissues)]
-    for (tissue in tissues){
-      mask_tissue=mask_diagnosis&(as.character(bulk$design$tissue)==tissue)
-      mask_tissue[is.na(mask_tissue)]=F
-      statuses=setdiff(unique(statusv[mask_tissue]),"")
-      if (length(statuses)==2){
+  mask_diagnosis=mask&(as.character(bulk$design$diagnosis)==diagnosis)
+  mask_tissue=mask_diagnosis&(as.character(bulk$design$tissue)==tissue)
+  mask_tissue[is.na(mask_tissue)]=F
+  statuses=setdiff(unique(statusv[mask_tissue]),"")
+  if (length(statuses)==2){
         
-        suffix=paste(dataset_name,diagnosis,tissue,sep="_")
-        open_plot(path="output/bulk/",fn=paste("scatter_",suffix,sep=""),plot_type = "pdf",width=8,height=4)
-        layout(matrix(1:2,1,2))
-        maski=mask_tissue&(statusv%in%statuses)
-        xlim=range(bulk$scores[maski,"score1"],na.rm=T)
-        ylim=range(bulk$scores[maski,"score2"],na.rm=T)
-      }
-      for (status in sort(statuses)){
-        maski=mask_tissue&(statusv==status)&(!is.na(bulk$scores[,"score1"]+bulk$scores[,"score2"]))
-        col=ifelse(is.na(bulk$design[maski,"response"]),1,ifelse(bulk$design[maski,"response"]=="R",responder_col,non_responder_col))
-        if (sum(!is.na(bulk$scores[maski,"score1"]))==0){
-          next;
-        }
-        cort_res=cor.test(bulk$scores[maski,"score1"],bulk$scores[maski,"score2"],method="spe")
-        suffix=paste(dataset_name,diagnosis,tissue,status,sep="_")
-        if (length(statuses)!=2){
-          open_plot(path="output/bulk/",fn=paste("scatter_",suffix,sep=""),plot_type = "pdf",width=4,height=4)
-          xlim=range(bulk$scores[maski,"score1"],na.rm=T)
-          ylim=range(bulk$scores[maski,"score2"],na.rm=T)
-        }
-        plot(bulk$scores[maski,"score1"],bulk$scores[maski,"score2"],panel.first=grid(),col=col,pch=20,xlab="score1",ylab="score2",cex.axis=.7,main=status,xlim=xlim,ylim=ylim)
-        mtext(paste("rho =",format(cort_res$estimate,digits=2),"; p =",format(cort_res$p.value,digits=2)),3,line = -1,adj = 1,cex=.7)
-      
-        print(suffix)
-        if (length(statuses)!=2){
-          close_plot()
-        }
-      }
-      if (length(statuses)==2){
-        close_plot()
-      }
-       for (status in statuses){
-        suffix=paste(dataset_name,diagnosis,tissue,status,sep="_")
-        maski=mask_tissue&(statusv==status)
-        if (sum(!is.na(bulk$scores[maski,"score1"]))==0){
-          next;
-        }
-        annot_profiles=list()
-        if (plot_ulceration){
-          annot_profiles$ulceration=ifelse(bulk$design$deep_ulcer[maski]=="no deep ulcer",responder_col,non_responder_col)
-        }
-        if (plot_bcur){
-          annot_profiles$B_cur=c("white","blue","red","black")[match(bulk$design$B_Cur[maski],c("B1","B2","B3","B2+B3"))]
-        }
-
-
-        gene_groups_heatmaps(bulk$z[,maski],genes_to_show$markers1,genes_to_show$markers2,by=bulk$scores[maski,"score1"],paste("heatmap_",suffix,"_selected_genes",sep=""),annot_profiles = annot_profiles)
-      }
-     
+    suffix=paste(dataset_name,diagnosis,tissue,sep="_")
+    open_plot(path=path,fn=paste("scatter_",suffix,sep=""),plot_type = "pdf",width=8,height=4)
+    layout(matrix(1:2,1,2))
+    maski=mask_tissue&(statusv%in%statuses)
+    xlim=range(bulk$scores[maski,"score1"],na.rm=T)
+    ylim=range(bulk$scores[maski,"score2"],na.rm=T)
+  }
+  for (status in sort(statuses)){
+    maski=mask_tissue&(statusv==status)&(!is.na(bulk$scores[,"score1"]+bulk$scores[,"score2"]))
+    col=ifelse(is.na(bulk$design[maski,"response"]),1,ifelse(bulk$design[maski,"response"]=="R",responder_col,non_responder_col))
+    if (sum(!is.na(bulk$scores[maski,"score1"]))==0){
+      next;
     }
+    cort_res=cor.test(bulk$scores[maski,"score1"],bulk$scores[maski,"score2"],method="spe")
+    suffix=paste(dataset_name,diagnosis,tissue,status,sep="_")
+    if (length(statuses)!=2){
+      open_plot(path=,fn=paste("scatter_",suffix,sep=""),plot_type = "pdf",width=4,height=4)
+      xlim=range(bulk$scores[maski,"score1"],na.rm=T)
+      ylim=range(bulk$scores[maski,"score2"],na.rm=T)
+    }
+    plot(bulk$scores[maski,"score1"],bulk$scores[maski,"score2"],panel.first=grid(),col=col,pch=20,xlab="score1",ylab="score2",cex.axis=.7,main=status,xlim=xlim,ylim=ylim)
+    mtext(paste("rho =",format(cort_res$estimate,digits=2),"; p =",format(cort_res$p.value,digits=2)),3,line = -1,adj = 1,cex=.7)
+      
+
+    if (length(statuses)!=2){
+      close_plot()
+    }
+  }
+  if (length(statuses)==2){
+    close_plot()
+  }
+  for (status in statuses){
+    suffix=paste(dataset_name,diagnosis,tissue,status,sep="_")
+    maski=mask_tissue&(statusv==status)
+    if (sum(!is.na(bulk$scores[maski,"score1"]))==0){
+      next;
+    }
+    annot_profiles=list()
+
+    gene_groups_heatmaps(bulk$z[,maski],genes_to_show$markers1,genes_to_show$markers2,by=bulk$scores[maski,"score1"],paste("heatmap_",suffix,"_selected_genes",sep=""),annot_profiles = annot_profiles,path=path)
   }
 }
 
 
 
-gene_groups_heatmaps=function(m,markers1,markers2,by=NULL,s="",reg=1e-5,annot_profiles=NULL,sample_labels=F,show_gene_names=T,zlim=c(-2,2),log_trans=F,show_celltype_bar=T,height=4){
+gene_groups_heatmaps=function(m,markers1,markers2,by=NULL,s="",reg=1e-5,annot_profiles=NULL,sample_labels=F,show_gene_names=T,zlim=c(-2,2),log_trans=F,show_celltype_bar=T,height=4,path=""){
   markersl1=markers1
   markersl2=markers2
   markers1=unlist(markers1)
@@ -329,7 +273,7 @@ gene_groups_heatmaps=function(m,markers1,markers2,by=NULL,s="",reg=1e-5,annot_pr
   }
   m=m[rowSums(!is.na(m))>0,]
   if (s!=""){
-    open_plot(path="output/bulk/",fn=paste("",s,sep=""),plot_type = "pdf",width=length(genes_to_show)/10,height=height)
+    open_plot(path=path,fn=paste("",s,sep=""),plot_type = "pdf",width=length(genes_to_show)/10,height=height)
   }
   if ((!is.null(annot_profiles))&length(annot_profiles)>0){
     layout_mat=matrix(1:(length(annot_profiles)+1),1,length(annot_profiles)+1)
@@ -347,13 +291,9 @@ gene_groups_heatmaps=function(m,markers1,markers2,by=NULL,s="",reg=1e-5,annot_pr
     markersl1=sapply(markersl1,function(x){x=x[x%in%rownames(m)]})
     markersl2=sapply(markersl2,function(x){x=x[x%in%rownames(m)]})
     sizes=c(sapply(markersl1,length),sapply(markersl2,length))
-  #  browser()
+
     cols=celltypes_cols1[cluster_to_cluster_set_with_pdc[names(cluster_to_subtype1[match(names(sizes),cluster_to_subtype1)])]]
     ctc=celltypes_cols1[names(sizes)]
-  #  if (any(!is.na(ctc))){
-  #    cols[!is.na(ctc)]=ctc[!is.na(ctc)]
-  #  }
-    rep(1:length(sizes),each=sizes)
     barplot(as.matrix(sizes/sum(sizes)), col = cols, axes =F ,beside = F,horiz=T,xaxs='i',yaxs='i',lwd=.5,xlim=c(0,1))
     par(mar=c(bottom_mar,laft_mar,.5,1))
   }
@@ -390,213 +330,11 @@ gene_groups_heatmaps=function(m,markers1,markers2,by=NULL,s="",reg=1e-5,annot_pr
 }
 
 
-plot_arijs_response=function(){
-  
-  mask_before=(bulk$design$dataset=="Arijs")&bulk$design$diagnosis=="CD"&bulk$design$tissue%in%c("Ileum","Colon")&bulk$design$BA=="beforeT"
-  mask_after=(bulk$design$dataset=="Arijs")&bulk$design$diagnosis=="CD"&bulk$design$tissue%in%c("Ileum","Colon")&bulk$design$BA=="afterT"
-  mask_after=rownames(bulk$design[mask_after,])[match(bulk$design[mask_before,"subject"],bulk$design[mask_after,"subject"])]
-  mask_before=rownames(bulk$design[mask_before,]);mask2=!(is.na(mask_before)|is.na(mask_after));mask_before=mask_before[mask2]
-  mask_after=mask_after[mask2]
-  open_plot("output/main_figures/",fn="figure_4g_arijs_cd_before_delta_one_scatter",plot_type="pdf",width = 4,height = 4)
-  par(mar=c(4,4,4,4))
-  plot(bulk$scores[mask_before,"score1"],bulk$scores[mask_after,"score1"]-bulk$scores[mask_before,"score1"],xlab="before=T",ylab="afterT minus beforeT",pch=c(20,18)[match(bulk$design[mask_before,"tissue"],c("Ileum","Colon"))],col=ifelse(bulk$design[mask_before,"response"]=="R",responder_col,non_responder_col),panel.first = {grid(lty=1);abline(0,0,lty=2)})
-  close_plot()
-  open_plot("output/main_figures/",fn="figure_4g_arijs_cd_before_after_one_scatter",plot_type="pdf",width = 4,height = 4)
-  par(mar=c(4,4,4,4))
-  lim=range(c(bulk$scores[mask_before,"score1"],bulk$scores[mask_after,"score1"]))
-  plot(bulk$scores[mask_before,"score1"],bulk$scores[mask_after,"score1"],xlab="before=T",ylab="afterT",pch=c(20,18)[match(bulk$design[mask_before,"tissue"],c("Ileum","Colon"))],xlim=lim,ylim=lim,col=ifelse(bulk$design[mask_before,"response"]=="R",responder_col,non_responder_col),panel.first = {grid(lty=1);abline(0,1,lty=2)})
-  close_plot()
-  
-  
-  
-  mask_before=(bulk$design$dataset=="Arijs")&bulk$design$diagnosis=="UC"&bulk$design$tissue%in%c("Ileum","Colon")&bulk$design$BA=="beforeT"
-  mask_after=(bulk$design$dataset=="Arijs")&bulk$design$diagnosis=="UC"&bulk$design$tissue%in%c("Ileum","Colon")&bulk$design$BA=="afterT"
-  mask_after=rownames(bulk$design[mask_after,])[match(bulk$design[mask_before,"subject"],bulk$design[mask_after,"subject"])]
-  mask_before=rownames(bulk$design[mask_before,]);mask2=!(is.na(mask_before)|is.na(mask_after));mask_before=mask_before[mask2]
-  mask_after=mask_after[mask2]
-  open_plot("output/supp_figures/",fn="figure_sx_arijs_uc_before_delta_one_scatter",plot_type="pdf",width = 4,height = 4)
-  par(mar=c(4,4,4,4))
- 
-  plot(bulk$scores[mask_before,"score1"],bulk$scores[mask_after,"score1"]-bulk$scores[mask_before,"score1"],xlab="before=T",ylab="afterT minus beforeT",pch=c(20,18)[match(bulk$design[mask_before,"tissue"],c("Ileum","Colon"))],col=ifelse(bulk$design[mask_before,"response"]=="R",responder_col,non_responder_col),panel.first = {grid(lty=1);abline(0,0,lty=2)})
-  close_plot()
-  open_plot("output/supp_figures/",fn="figure_sx_arijs_uc_before_after_one_scatter",plot_type="pdf",width = 4,height = 4)
-  par(mar=c(4,4,4,4))
-  lim=range(c(bulk$scores[mask_before,"score1"],bulk$scores[mask_after,"score1"]))
-  plot(bulk$scores[mask_before,"score1"],bulk$scores[mask_after,"score1"],xlab="before=T",ylab="afterT",pch=c(20,18)[match(bulk$design[mask_before,"tissue"],c("Ileum","Colon"))],xlim=lim,ylim=lim,col=ifelse(bulk$design[mask_before,"response"]=="R",responder_col,non_responder_col),panel.first = {grid(lty=1);abline(0,1,lty=2)})
-  close_plot()
-}
 
 
 
 
 
-plot_dataset_with_stratification=function(dataset_name="Arijs",tissues,pool_tissues=F,ngenes=100,genes_to_show=c(),plot_cor=T,stratify_by="ba"){
-  plot_tissue=function(mask_tissue,statuses,file_prefix){
-    for (status in statuses){
-      if (status=="Uninflamed"){
-        next()
-      }
-      suffix=paste(file_prefix,status,sep="_")
-      print(suffix)
-      
-      
-      maski=mask_tissue&(statusv==status)
-      
-      
-      mask_stratify_list=list()
-      if (stratify_by=="ba"){
-        bav=bulk$design$BA
-        bav[is.na(bav)]=""
-        
-        mask_stratify_list$beforeT=maski&bav=="beforeT"
-        mask_stratify_list$afterT=maski&bav=="afterT"
-      }
-      
-      if (stratify_by=="treatment"){
-        treatmentv=bulk$design$treatment
-        treatmentv[is.na(treatmentv)]=""
-
-              mask_stratify_list$Pbo=maski&treatmentv=="Pbo"
-        mask_stratify_list$Ust_6_mg_kg=maski&treatmentv=="Ust 6 mg/kg"
-        mask_stratify_list$Ust_130_mg=maski&treatmentv=="Ust 130 mg"
-      }
-      
-      open_plot(path="output/bulk/",fn=paste("scatter_",suffix,sep=""),plot_type = "pdf",width=4*length(mask_stratify_list),height=4)
-      par(mar=c(4,4,4,4))
-      layout(matrix(1:length(mask_stratify_list),1,length(mask_stratify_list)))
-      
-      xlim=range(bulk$scores[mask_tissue&(statusv==status),"score1"],na.rm=T)
-      ylim=range(bulk$scores[mask_tissue&(statusv==status),"score2"],na.rm=T)
-      
-      for (i in 1:length(mask_stratify_list)){
-        mask_stratify=mask_stratify_list[[i]]
-        mask_stratify=mask_stratify&!(is.na(bulk$scores[,"score1"])|is.na(bulk$scores[,"score2"]))
-        if (sum(mask_stratify)<10){
-          plot_cor=F
-        }
-        if (plot_cor){
-          cort_res=cor.test(bulk$scores[mask_stratify,"score1"],bulk$scores[mask_stratify,"score2"],method="spe")
-        }
-        response=ifelse(bulk$design$response[mask_stratify]=="R",responder_col,non_responder_col)
-        response[is.na(response)]=1
-        if (sum(mask_stratify)>0){
-          tissues=unique(as.character(bulk$design$tissue[mask_stratify]))
-          if ("Ileum"%in%tissues){
-            tissues=c("Ileum",tissues[tissues!="Ileum"])
-          }
-          pchs=c(20,18,15,16,17)[match(bulk$design$tissue[mask_stratify],tissues)]
-          plot(bulk$scores[mask_stratify,"score1"],bulk$scores[mask_stratify,"score2"],panel.first=grid(),xlab="score1",ylab="score2",cex.axis=.7,col=response,xlim=xlim,ylim=ylim,main=names(mask_stratify_list)[i],pch=pchs)
-          if (length(tissues)>1){
-            legend("bottomleft",legend = tissues,pch=c(20,18,15,16,17)[1:length(tissues)],col=1,cex=.7)
-          }
-          if (plot_cor){
-            mtext(paste("rho =",format(cort_res$estimate,digits=2),"; p =",format(cort_res$p.value,digits=2)),3,line = -1,adj = 1,cex=.7)
-          }
-        }
-        else {
-          plot.new()
-        }
-      }
-      close_plot()
-      for (i in 1:length(mask_stratify_list)){
-        mask_stratify=mask_stratify_list[[i]]
-        mask_stratify=mask_stratify&!(is.na(bulk$scores[,"score1"])|is.na(bulk$scores[,"score2"]))
-        if (sum(mask_stratify)==0){
-          next
-        }
-        suffix=paste(dataset_name,diagnosis,status,names(mask_stratify_list)[i],sep="_")
-        annot_profiles=list()
-        annot_profiles$response=ifelse(bulk$design$response[mask_stratify]=="R",responder_col,non_responder_col)
-        
-        gene_groups_heatmaps(bulk$z[,mask_stratify],genes_to_show$markers1,genes_to_show$markers2,by=bulk$scores[mask_stratify,"score1"],paste("heatmap_",suffix,"_selected_genes",sep=""),annot_profiles=annot_profiles)
-      }
-    }
-  }
-  
-  
-  mask=bulk$design$dataset==dataset_name
-  statusv=as.character(bulk$design$status)
-  statusv[is.na(statusv)]=""
-  for (diagnosis in unique(bulk$design[mask,]$diagnosis)){
-    mask_diagnosis=mask&(bulk$design$diagnosis==diagnosis)
-  
-      mask_tissue=mask_diagnosis&(bulk$design$tissue%in%tissues)
-      mask_tissue[is.na(mask_tissue)]=F
-      statuses=setdiff(unique(statusv[mask_tissue]),"")
-      
-      if (pool_tissues){
-        plot_tissue(mask_tissue,statuses,file_prefix=paste(dataset_name,diagnosis,sep="_"))
-      }
-      else {
-        for (tissue in tissues){
-          mask_tissue=mask_diagnosis&(bulk$design$tissue==tissue)
-          mask_tissue[is.na(mask_tissue)]=F
-          file_prefix=paste(dataset_name,diagnosis,sep="_")
-          plot_tissue(mask_tissue,statuses,file_prefix=paste(dataset_name,diagnosis,tissue,sep="_"))
-        }
-      }
-  }
-}
-
-
-get_module_scores=function(mat,mods){
-  mask=intersect(rownames(mat),names(mods))
-  modsums=t(sapply(split(as.data.frame(as.matrix(mat[mask,])),mods[mask],drop=F),colSums,na.rm=T))
-  mask_tot=intersect(rownames(mat),rownames(ileum_ldm$dataset$umitab))
-  modfreqs=modsums/colSums(mat[mask_tot,],na.rm=T)
-  return(modfreqs)
-}
-
-
-
-
-
-
-get_module_scores=function(mat,mods){
-  mask=intersect(rownames(mat),names(mods))
-  modsums=t(sapply(split(as.data.frame(as.matrix(mat[mask,])),mods[mask],drop=F),colSums,na.rm=T))
-  mask_tot=intersect(rownames(mat),rownames(ileum_ldm$dataset$umitab))
-  modfreqs=modsums/colSums(mat[mask_tot,],na.rm=T)
-  return(modfreqs)
-}
-
-plot_modules_heatmap=function(normed,order_patiens_by,annot_cols=NULL,reg=1e-5){
-  mods_scores=get_module_scores(normed,mods)
-  if (!is.null(annot_cols)){
-    layout(matrix(1:2,1,2),widths = c(20,1))
-    par(mar=c(5,7,1,1))
-  }
-  else{
-    par(mar=c(5,7,1,1))
-  }
-  patient_ord=order(order_patiens_by)
-#  mods_ord=order(as.numeric(rownames(mods_scores)))
-
-  mods_scores_normed=log2((reg+mods_scores)/(reg+rowMeans(mods_scores)))
-  mod_ord=order(as.numeric(rownames(mods_scores_normed)))
-  image(mods_scores_normed[mod_ord,patient_ord],col=greenred(100),axes=F,breaks=c(-1e8,seq(-1.5,1.5,l=99),1e8))
-  mtext(text = paste("Module",rownames(mods_scores_normed))[mod_ord],side = 1,at = seq(0,1,l=nrow(mods_scores_normed)),las=2,cex=.5)
-  mtext(text = colnames(mods_scores_normed)[patient_ord],side = 2,at = seq(0,1,l=ncol(mods_scores_normed)),las=2,cex=.5)
-  if (!is.null(annot_cols)){
-    par(mar=c(5,0,1,1))
-    u=unique(annot_cols)
-    image(matrix(match(annot_cols[patient_ord],u),1,length(annot_cols)),col=u,breaks=0:length(u)+.5,axes=F)
-  }
-}
-
-
-
-cor_fun=function(x,y){
-  return(round(cor(x,y,method="pearson"),digits=2))
-}
-
-get_m_one_sample=function(samp){
-  genes=intersect(rownames(lm$dataset$umitab),rownames(lm$dataset$noise_model))
-  s=rowSums(lm$dataset$umitab[genes,lm$dataset$cell_to_sample==samp])
-  s_noise=lm$dataset$beta_noise[samp]*lm$dataset$noise_model[genes,samp]*sum(lm$dataset$cell_to_sample==samp)
-  s_net=pmax(s-s_noise,0)
-  return(s_net/sum(s_net))
-}
 
 
 ######################################################################################################
@@ -634,7 +372,6 @@ load_bulk_datasets=function(load_text=F){
   names(diagnosis_conversion)=diagnosis_conversion_table[,1]
   treatment_conversion=c("Pbo","Pbo","Ust 130 mg","Ust 130 mg","Ust 6 mg/kg","Ust 6 mg/kg")
   names(treatment_conversion)=c("Placebo IV","Pbo","Ustekinumab 130 mg IV","Ust 130 mg","Ustekinumab 6 mg/kg IV","Ust 6 mg/kg")
-#  tissue_conversion_table=cbind(c('Ascending colon','Rectum',"RECTUM",'Terminal Ileum',"T. ILEUM","ILEUM",'Descending colon','Sigmoid colon','Transverse colon','DELETED','Not Collected','Blood','ileum','colon','sigmoid','CDc','CDi',"iCD",'uc','UC','ctrl','IL','SP. FLEX'),c('Ascending Colon','Rectum','Rectum','Ileum','Ileum','Ileum','Descending Colon','Sigmoid Colon','Transverse Colon','Exclude','Exclude','Blood','Ileum','Colon','Sigmoid Colon','Colon',"Ileum","Ileum","Colon","Colon","?","?",'SP. FLEX'))
   tissue_conversion_table=cbind(c('Ascending colon','Rectum',"RECTUM",'Terminal Ileum',"T. ILEUM","ILEUM",'Descending colon','Sigmoid colon','Transverse colon','DELETED','Not Collected','Blood','ileum','colon','sigmoid','CDc','CDi',"iCD",'uc','UC','ctrl','IL','SP. FLEX'),c('Colon','Rectum','Rectum','Ileum','Ileum','Ileum','Colon','Colon','Colon','Exclude','Exclude','Blood','Ileum','Colon','Colon','Colon',"Ileum","Ileum","Colon","Colon","?","?",'SP. FLEX'))
   
    tissue_conversion=tissue_conversion_table[,2]
@@ -670,7 +407,6 @@ load_bulk_datasets=function(load_text=F){
   design=rbind(design,certifi_design2)
 
 
-  print(nrow(design))
 
   ####################################
   ##
@@ -744,8 +480,7 @@ load_bulk_datasets=function(load_text=F){
   clin$uniti2=l$uniti2$design[,-1:-5]
   uniti2_design=data.frame(dataset="UNITI-2",subject=uniti_subject,geo_accesion=NA,sex=NA,diagnosis="CD",age=NA,tissue=uniti_tissue,status="Inflamed",deep_ulcer=NA,BA=uniti_BA,treatment=uniti_treatment,response=uniti_response)
  
-  #  uniti2_design=data.frame(dataset="UNITI-2",subject=uniti_subject,geo_accesion=NA,sex=NA,diagnosis="CD",age=NA,tissue=uniti_tissue,status="Inflamed",deep_ulcer=NA,BA=uniti_BA,treatment=uniti_treatment,response=uniti_response)
-  rownames(uniti2_design)=rownames(l$uniti2$design)
+   rownames(uniti2_design)=rownames(l$uniti2$design)
   raw_exprs=cbind(raw_exprs,uniti2_raw)
   design=rbind(design,uniti2_design)
   
@@ -773,104 +508,14 @@ load_bulk_datasets=function(load_text=F){
   return(list(raw=raw_exprs,z=z_exprs,design=design,clin=clin))
 }
 
+################################################################################################
 
-
-DE_pat1_vs_pat2=function(){
-  source('~/GoogleDrive/work/scClustering/DE.r')
- 
-  de_res=DE_between_two_sets(ileum_ldm,mask1,mask2,nchunks=1000,n_per_chunk=1000,reg=1e-7)
-  write.csv(de_res[order(de_res$log2_FC),],file="output/tables/DE_inflamed_pat1_vs_pat2.csv")
-  
-  uninf_pat1=inflamed_samples[sample_to_patient[uninflamed_samples]%in%pat1]
-  uninf_pat2=inflamed_samples[sample_to_patient[uninflamed_samples]%in%pat2]
-  mask1=colnames(ileum_ldm$dataset$umitab)[ileum_ldm$dataset$cell_to_sample%in%uninf_pat1]
-  mask2=colnames(ileum_ldm$dataset$umitab)[ileum_ldm$dataset$cell_to_sample%in%uninf_pat2]
-  de_res=DE_between_two_sets(ileum_ldm,mask1,mask2,nchunks=1000,n_per_chunk=1000,reg=1e-7)
-  write.csv(de_res[order(de_res$log2_FC),],file="output/tables/DE_uninflamed_pat1_vs_pat2.csv")
-  
-  inf_pat1=inflamed_samples[sample_to_patient[inflamed_samples]%in%pat1]
-  inf_pat2=inflamed_samples[sample_to_patient[inflamed_samples]%in%pat2]
-  for (cluster_set in setdiff(names(cluster_sets),"")){
-    message(cluster_set)
-    clusts=unlist(cluster_sets[[cluster_set]])
-    mask1=colnames(ileum_ldm$dataset$umitab)[ileum_ldm$dataset$cell_to_sample%in%inf_pat1&ileum_ldm$dataset$cell_to_cluster%in%clusts]
-    mask2=colnames(ileum_ldm$dataset$umitab)[ileum_ldm$dataset$cell_to_sample%in%inf_pat2&ileum_ldm$dataset$cell_to_cluster%in%clusts]
-    de_res=DE_between_two_sets(ileum_ldm,mask1,mask2,nchunks=100,n_per_chunk=1000,reg=1e-7,noise_correction = T)
-    write.csv(de_res[order(de_res$log2_FC),],file=paste("output/tables/DE_inflamed_pat1_vs_pat2_",cluster_set,".csv",sep=""))
-  }
-  
-}
-
-
-DE_pat1_vs_pat2_with_EP=function(){
-  nchunks=1000
-  n_per_chunk=100
-  reg=1e-7
-  nmin_umi_thresh=1
-  nmin_cells_with_min_umi=20
-  ldm=ileum_ldm
-  
-  # without patients 6 and 11
-  pat1<<-paste("rp",c(7,8,5,11,12))
-  pat2<<-paste("rp",c(6,10,13,14,15))
-  
-  inf_pat1=inflamed_samples[sample_to_patient[inflamed_samples]%in%pat1]
-  inf_pat2=inflamed_samples[sample_to_patient[inflamed_samples]%in%pat2]
-  mask1=colnames(ldm$dataset$umitab)[ldm$dataset$cell_to_sample%in%inf_pat1]
-  mask2=colnames(ldm$dataset$umitab)[ldm$dataset$cell_to_sample%in%inf_pat2]
-  u=ldm$dataset$umitab[,c(mask1,mask2)]
-  
-  for (si in inf_pat1){
-    u=cBind(u,ldm$dataset$gated_out_umitabs$EP[[si]])
-    mask1=c(mask1,colnames(ldm$dataset$gated_out_umitabs$EP[[si]]))
-  }
-  for (si in inf_pat2){
-    u=cBind(u,ldm$dataset$gated_out_umitabs$EP[[si]])
-    mask2=c(mask2,colnames(ldm$dataset$gated_out_umitabs$EP[[si]]))
-  }
-  
-  gene_mask=rowSums(u>nmin_umi_thresh)>nmin_cells_with_min_umi
-  u=u[gene_mask,c(mask1,mask2)]
-  
-  obs_s=pmax(rowSums(u),0)
-  obs_s1=pmax(rowSums(u[,mask1]),0)
-  obs_s2=obs_s-obs_s1
-  obs_m1=obs_s1/sum(obs_s1)
-  obs_m2=obs_s2/sum(obs_s2)
-  obs_log2_fc=log2((reg+obs_m2)/(reg+obs_m1))
-  ncounts_bigger=rep(0,nrow(u))
-
-  nA=min(length(mask1),length(mask2))
-  mat=matrix(c(rep(T,nA),rep(F,ncol(u)-nA)),n_per_chunk,ncol(u),byrow =T)
-
-  ntot=ncol(u)
-  for (i in 1:nchunks){
-    message(i)
-  
-    print(system.time({
-      sA=u%*%apply(mat,1,sample,ntot)
-    }))
-    sB=obs_s-sA
-    mA=t(t(sA)/colSums(sA))
-    mB=t(t(sB)/colSums(sB))
-    log2_fc=log2((reg+mB)/(reg+mA))
-    ncounts_bigger=ncounts_bigger+rowSums(abs(log2_fc)>=abs(obs_log2_fc))
-  
-  #    
-  #    save(file="de_current_iter.rd",i)
-  }
-  p.value=ncounts_bigger/(i*n_per_chunk)
-  adj.p.value=p.adjust(p.value,method = "BH")
-  de_res=data.frame(counts1=obs_s1,counts2=obs_s2,freq1=obs_m1,freq2=obs_m2,log2_FC=obs_log2_fc,p.value=p.value,adj.p.value=adj.p.value)
-  write.csv(de_res[order(de_res$log2_FC),],file="output/tables/DE_inflamed_pat1_vs_pat2.csv")
-}
-  
 
 risk_clinical_data=function(bulk){
   columns_res=grep("RES",colnames(bulk$clin$risk),val=T)
   profs=gsub("RES","",columns_res)
   for (i in 1:length(profs)){
-    open_plot(path="output/bulk/",fn = paste("risk_",profs[i],"_vs_scores",sep=""),plot_type = "pdf",width = 8,height = 4)
+    open_plot(path=supp_figures_path,fn = paste("risk_",profs[i],"_vs_scores",sep=""),plot_type = "pdf",width = 8,height = 4)
     layout(matrix(1:2,1,2))
     plot(bulk$scores[rownames(bulk$clin$risk),"score1"],bulk$clin$risk[,columns_res[i]],xlab="Score 1",ylab=profs[i])
     cor_res=cor.test(bulk$scores[rownames(bulk$clin$risk),"score1"],bulk$clin$risk[,columns_res[i]])
@@ -932,123 +577,7 @@ select_genes=function(max_per_clusterset=30,thresh_cluster=0.5,thresh_pattern1=1
 
 
 
-#######################################################################################################################################
-
-
-main_bulk=function(load_data=F){
-
-  
-  lm=ileum_ldm
-  score_thresh<<-list()  
-  responder_col<<-brew_cols[5]
-  non_responder_col<<-brew_cols[4]
-  if (load_data){
-    lbd_res<-load_bulk_datasets(load_text)
-    bulk<<-lbd_res
-    #mods<<-read_modules()
-    write.csv(file="output/tables/full_bulk_design.csv",bulk$design)
-  }
-  
-  #message("pattern1:",paste(pat1,collaspse=","),"pattern2:",paste(pat2,collaspse=","))
-  inf_pat1<<-inflamed_samples_v2[sample_to_patient[inflamed_samples_v2]%in%pat1]
-  inf_pat2<<-inflamed_samples_v2[sample_to_patient[inflamed_samples_v2]%in%pat2]
-  uninf_pat1<<-uninflamed_samples_v2[sample_to_patient[uninflamed_samples_v2]%in%pat1]
-  uninf_pat2<<-uninflamed_samples_v2[sample_to_patient[uninflamed_samples_v2]%in%pat2]
-  ncells_per_sample=table(lm$dataset$cell_to_sample)
-  
-  
-  s1=apply(lm$dataset$counts[inf_pat1,,],2,sum)
-  s2=apply(lm$dataset$counts[inf_pat2,,],2,sum)
-  ms=apply(lm$dataset$counts[c(inf_pat1,inf_pat2),,],1:2,sum)
-  mm=ms/rowSums(ms)
-  mm1=1e-6+t(mm[inf_pat1,])
-  mm2=1e-6+t(mm[inf_pat2,])
-
-  afc=log2(rowMeans(mm2)/rowMeans(mm1))
-  
-  s=apply(lm$dataset$counts,2,sum)
-  ms=t(apply(lm$dataset$counts,1:2,sum))
-  ms=t(t(ms)/colSums(ms))
-  
-  mz=(ms-rowMeans(ms))/apply(ms,1,sd)
-  mz=mz[,inflamed_samples]
-  colnames(mz)=sample_to_patient[colnames(mz)]
-  p_thresh=1e-4
-  
-  de_res2=de_res[de_res$adj.p.value<p_thresh,]
-  s_ep=rowSums(sapply(ileum_ldm$dataset$gated_out_umitabs$EP,rowSums))
-  
-  models=cbind(ileum_ldm$model$models,EP=s_ep/sum(s_ep))
-  cluster_to_cluster_set=c(cluster_to_cluster_set,"EP")
-  names(cluster_to_cluster_set)[cluster_to_cluster_set=="EP"]="EP"
-  
-  gene_tab=data.frame(ifelse(de_res2$log2_FC>thresh,2,1),colnames(models)[apply(models[rownames(de_res2),],1,which.max)],de_res2[,c("freq_bg","freq_fg","log2_FC")])
-  rownames(gene_tab)=rownames(de_res2)
-  
-  gene_tab=gene_tab[de_res2$adj.p.value<1e-4&abs(de_res2$log2_FC)>thresh,]
-  
-  scores_EP_genes<<-select_genes(max_per_clusterset =20,thresh_cluster=1,thresh_pattern1=1,thresh_pattern2 =.5 ,thresh_freq=1e-6,cluster_to_subtype=cluster_to_subtype,included_cluster_sets1=c("EP"),included_cluster_sets2=c("EP"),restrict_to_included_cluster_sets=F,trace=F)
-  
-  scores_genes<<-select_genes(max_per_clusterset =20,thresh_cluster=3,thresh_pattern1=1,thresh_pattern2 =1,thresh_freq=1e-6,cluster_to_subtype=cluster_to_subtype1,fdr_thresh = 0.001,
-                                included_cluster_sets1=c("Inf. Macrophages","Activated DC","pDC","IgG plasma cells","Naive/CM T cells","Tregs","ACKR1+ endothelial cells","Activated fibroblasts"),
-                                included_cluster_sets2=c("Resident macrophages","moDC","IgA plasma cells","ILC3","Cytokines low Trm","Type 1 cytokines Trm","Type 3 cytokines Trm","Enteric neurons","CD36+ endothelial cells", "Fibroblasts"),
-                              trace=T,restrict_to_included_cluster_sets = T)
-  
-  
-  bulk$scores<<-get_scores(scores_genes$markers1,scores_genes$markers2,bulk$z) 
-
-  scRNA_scores<<-get_scores(scores_genes$markers1,scores_genes$markers2,mz)
-  ep_score<<-get_scores(scores_genes$markers1,scores_EP_genes,bulk$z) 
-  
-  project_all_scores(sample_set_list,design = bulk$design)
- 
-  maski=bulk$design$dataset%in%c("UNITI-1","UNITI-2")
-  mask_early=maski&bulk$design$BA=="beforeT"&maski&bulk$design$tissue=="Ileum"
-  mapping_mask= which(mask_early)[match(paste(bulk$design[maski,"dataset"],bulk$design[maski,"subject"]),paste(bulk$design[mask_early,"dataset"],bulk$design[mask_early,"subject"]))]
-  bulk$design[maski,"prediction"]<<-ifelse(bulk$scores[mapping_mask,"score1"]>prediction_thresh,"NR","R")
-  
-  
-  markers<<-scores_genes
-
-  message("pattern1")
-  print(markers$markers1[sapply(markers$markers1,length)>0])
-  message("pattern2")
-  print(markers$markers2[sapply(markers$markers2,length)>0])
-  write.csv(file="output/tables/score_genes.csv",rbind(cbind(geneSymbol=unlist(markers$markers1[sapply(markers$markers1,length)>0]),group="with module"),cbind(geneSymbol=unlist(markers$markers2[sapply(markers$markers2,length)>0]),group="No module")),quote=F,row.names=T)
-  open_plot("output/main_figures/",fn="figure_4a_volcano_pat1_vs_pat2",plot_type="pdf",width = 5,height = 5)
-  par(mar=c(4,4,4,4))
-  plot(de_res$log2_FC,-log2(de_res$adj.p.value),xlim=c(-1,1),xlab="Log2(freq(pat2)/freq(pat1))",ylab="FDR adjusted p.value (BH)",cex=.7)
-  close_plot()
-  
-  open_plot("output/main_figures/",fn="figure_4b_scatter_scores_inflamed",plot_type="pdf",width = 5,height = 5)
-  plot_figure_4b()
-  close_plot()
- 
-  open_plot("output/main_figures/",fn="figure_4b_scatter_scores_uninflamed",plot_type="pdf",width = 5,height = 5)
-  plot_figure_4b("Uninflamed")
-  close_plot()
-  
-
-  plot_dataset("CERTIFI",genes_to_show = markers)
-  plot_dataset_with_stratification(tissues=c("Ileum"),dataset_name="UNITI-1",genes_to_show = markers,stratify_by = "ba")
-  plot_dataset_with_two_stratifications(tissues=c("Ileum"),dataset_name="UNITI-2",genes_to_show = markers)
-  plot_dataset_with_two_stratifications(tissues=c("Ileum"),dataset_name="UNITI-1",genes_to_show = markers)
-  plot_dataset("RISK",plot_ulceration = F,plot_bcur = F,genes_to_show = markers)
-  
-
-  
-  rownames(mm)=sample_to_patient[rownames(mm)]
-  ord=match(rownames(mm),c(pat1,pat2))
-  gene_groups_heatmaps(t(mm),markers$markers1,markers$markers2,by=ord,paste("heatmap_scRNA_patients",sep=""),sample_labels=T,zlim=c(-2,2),log_trans = T,reg=1e-6,height = 1.3,show_gene_names=F,show_celltype_bar=F)
-
-  risk_clinical_data(bulk)
-
-  score_thresh$RISK<<-plot_risk_figures()
-  
-
-  
-  write.csv(file="output/tables/scores.csv",bulk$scores,row.names = T)
-}
+#############################################################################################
 
 
 plot_figure_4b=function(status="Inflamed"){
@@ -1079,15 +608,6 @@ plot_figure_4b=function(status="Inflamed"){
 
 
 
-compare <- function(x, y) {
-  n <- length(x); m <- length(y)
-  w <- c(x, y)
-  o <- order(w)
-  z <- cumsum(ifelse(o <= n, m, -n))
-  i <- which.max(abs(z))
-  w[o[i]]
-}
-
 
 plot_risk_figures=function(){
   mask_risk=bulk$design$dataset=="RISK"&bulk$design$tissue=="Ileum"&bulk$design$status=="Inflamed"&bulk$design$diagnosis=="CD"
@@ -1113,7 +633,7 @@ plot_risk_figures=function(){
   response1=bulk$design$response[mask_risk]
   score1=by[!is.na(response1)]
   response1=response1[!is.na(response1)]
-  open_plot(path="output/bulk/",fn ="risk_roc",plot_type = "pdf",width = 6,height = 6)
+  open_plot(path=supp_figures_path,fn ="risk_roc",plot_type = "pdf",width = 6,height = 6)
   par(mar=c(5,5,1,1))
   auc=simple_auc(simple_roc(response1=="R",-1*score1))
   auc_resamp=replicate(1e4,simple_auc(simple_roc(sample(response1=="R",length(response1),replace = F),-1*score1)))
@@ -1123,7 +643,7 @@ plot_risk_figures=function(){
   abline(0,1,lty=3,col=1)
   close_plot()
 
-  open_plot(path="output/bulk/",fn ="risk_response",plot_type = "pdf",width = 4,height = 4)
+  open_plot(path=main_figures_path,fn ="risk_response",plot_type = "pdf",width = 4,height = 4)
 #  layout(matrix(1:2,1,2))
   par(mar=c(4,4,4,4))
   plot(1,col=0,xlim=c(-1,1),ylim=c(0,1),panel.first=grid(lty=1),ylab="Cumulative Fraction",xlab="Projection score")
@@ -1141,10 +661,10 @@ plot_risk_figures=function(){
   n <- n.x * n.y/(n.x + n.y)
   w <- c(l_score$R, l_score$NR)
   z <- cumsum(ifelse(order(w) <= n.x, 1/n.x, -1/n.y))
-  max(abs(z)) # Dmax
+ # max(abs(z)) # Dmax
   max.at <- sort(w)[which(abs(z) == max(abs(z)))]
-  message("D is max at",max.at)
-  open_plot(path="output/bulk/",fn ="risk_response_threshold",plot_type = "pdf",width = 4,height = 4)
+#  message("D is max at",max.at)
+  open_plot(path=main_figures_path,fn ="risk_response_threshold",plot_type = "pdf",width = 4,height = 4)
   par(mar=c(4,4,2,2))
   plot(1,col=0,xlim=c(-1,1),ylim=c(0,1),panel.first=grid(lty=1),ylab="Cumulative Fraction",xlab="Projection score")
   quants=sapply(l_score,quantile,0:100/100)
@@ -1156,201 +676,16 @@ plot_risk_figures=function(){
    close_plot()
   tab=table(bulk$scores[mask_risk,"score1"]>max.at,bulk$design$response[mask_risk])
   
-  open_plot(path="output/bulk/",fn ="risk_response_piecharts",plot_type = "pdf",width = 6,height = 6)
+  open_plot(path=main_figures_path,fn ="risk_response_piecharts",plot_type = "pdf",width = 6,height = 6)
   par(mar=c(1,1,4,1))
   layout(matrix(1:2,2,1))
   pie(tab[1,],c("Non responders","Responders"),col=c(non_responder_col,responder_col),main=paste("Signature score <",round(max.at,digits=2)))
   pie(tab[2,],c("Non responders","Responders"),col=c(non_responder_col,responder_col),main=paste("Signature score >",round(max.at,digits=2)))
   close_plot()
   
-  l_score=split(-1*by,bulk$design$deep_ulcer[mask_risk])[c("deep ulcer","no deep ulcer")]
-  open_plot(path="output/bulk/",fn ="risk_ulceration",plot_type = "pdf",width = 8,height = 4)
-  layout(matrix(1:2,1,2))
-  plot(1,col=0,xlim=c(-1,1),ylim=c(0,1),panel.first=grid(lty=1),ylab="Cumulative Fraction",xlab="Projection score")
-  matplot(sapply(l_score,quantile,0:100/100),0:100/100,type='l',lty=1,lwd=2,col=c(non_responder_col,responder_col),xlim=c(-1,1),cex=.7,add=T)
-  ks_res=ks.test(l_score$`deep ulcer`,l_score$`no deep ulcer`,alternative = "less")
-  text(-1,0.95,labels = paste("KS D=",round(ks_res$statistic,digits=2),"; p=",round(ks_res$p.value,digits = 4)),pos=4,cex=1)
-  legend("bottomright",legend=c("Deep Ulcer","No Deep Ulcer"),col=c(non_responder_col,responder_col),lty=1,lwd=2,cex=.8)
-  data=t(table(patient_groups,bulk$design$deep_ulcer[mask_risk]))[c("no deep ulcer","deep ulcer"),c("low","high")]
-  barplot(data,beside=T,col=c(responder_col,non_responder_col),names.arg = c("Low score", "High score"),yaxp=c(0, 10*ceiling(max(data)/10), ceiling(max(data)/10)))
-  close_plot()
-  
-  
-  l_score=split(-1*by,bulk$design$B_Cur[mask_risk]=="B1")
-
-  names(l_score)=c("Other","B1")
-  open_plot(path="output/bulk/",fn ="B1_",plot_type = "pdf",width = 8,height = 4)
-  layout(matrix(1:2,1,2))
-  plot(1,col=0,xlim=c(-1,1),ylim=c(0,1),panel.first=grid(lty=1),ylab="Cumulative Fraction",xlab="Projection score")
-  matplot(sapply(l_score,quantile,0:100/100),0:100/100,type='l',lty=1,lwd=2,col=c(non_responder_col,responder_col),xlim=c(-1,1),cex=.7,add=T)
-  ks_res=ks.test(l_score$Other,l_score$B1,alternative = "less")
-  text(-1,0.95,labels = paste("KS D=",round(ks_res$statistic,digits=2),"; p=",round(ks_res$p.value,digits = 4)),pos=4,cex=1)
-  legend("bottomright",legend=c("other","B1"),col=c(non_responder_col,responder_col),lty=1,lwd=2,cex=.8)
-  data=t(table(patient_groups,ifelse(bulk$design$B_Cur[mask_risk]=="B1","B1","Other")))[c("B1","Other"),c("low","high")]
-  barplot(data,beside=T,col=c(responder_col,non_responder_col),names.arg = c("Low score", "High score"),yaxp=c(0, 10*ceiling(max(data)/10), ceiling(max(data)/10)))
-  close_plot()
-  
-  columns_res=grep("RES",colnames(bulk$clin$risk),val=T)
-  profs=gsub("RES","",columns_res)
-  columns_res=c(columns_res,"ENCRF.18.PCDAI.SCORE.PCDAI")
-  profs=c(profs,"pcdai")
-  browser()
-  for (i in 1:length(profs)){
-    open_plot(path="output/bulk/",fn = paste("risk_",profs[i],"_vs_scores",sep=""),plot_type = "pdf",width = 6.5,height = 4)
-    layout(matrix(1:2,1,2))
-    plot(-1*by,bulk$clin$risk[rownames(bulk$design)[mask_risk],columns_res[i]],xlab="Score 1",ylab=profs[i],panel.first = grid(lty=1))
-    cor_res=cor.test(-1*by,bulk$clin$risk[rownames(bulk$design)[mask_risk],columns_res[i]],method = "spe")
-    mtext(side=3,paste("r=",round(cor_res$estimate,digits=2)," ; p=",round(cor_res$p.value,digits=4),sep=""),line = 1)
-    boxplot(split(bulk$clin$risk[rownames(bulk$design)[mask_risk],columns_res[i]],patient_groups))
-    dev.off()
-  }
-
-  ##genetics
-  apply(bulk$clin$risk[,c("IL23R_imm_1_67475114_rs11465804","ATG16L1_imm_2_233845149_rs3828309","PRDM1_imm_6_106541962_rs7746082","JAK2_imm_9_4971602_rs10758669","NOD2_imm_16_49303427_rs2066844","NOD2_imm_16_49314041_rs2066845","NOD2_rs5743293_rs2066847")],2,function(x){tab=table(x,1+as.numeric(bulk$scores[rownames(bulk$clin$risk),"score1"]<.25));tab=t(t(tab)/colSums(tab));return(tab)})
-  apply(bulk$clin$risk[,c("IL23R_imm_1_67475114_rs11465804","ATG16L1_imm_2_233845149_rs3828309","PRDM1_imm_6_106541962_rs7746082","JAK2_imm_9_4971602_rs10758669","NOD2_imm_16_49303427_rs2066844","NOD2_imm_16_49314041_rs2066845","NOD2_rs5743293_rs2066847")],2,table, 1+as.numeric(bulk$scores[rownames(bulk$clin$risk),"score1"]<.25))
  
-  return(max.at)
+
 }
-plot_cor=function(dataset="Arijs-frma"){
-  gs=c(intersect(rownames(bulk$raw),unlist(markers$markers1)),intersect(rownames(bulk$raw),unlist(markers$markers2)))
-  x=bulk$z[gs,bulk$design$dataset==dataset]
-  x=x[rowSums(is.na(x))<ncol(x),]
-  x=x[,colSums(is.na(x))<nrow(x)]
-  cormat=cor(t(x),use="comp")
-  image(cormat,col=colorRampPalette(c("blue","white","red"))(100),breaks=c(-1,seq(-.7,.7,l=99),1))
-}
-
-
-plot_dataset_with_two_stratifications=function(dataset_name="Arijs",tissues,pool_tissues=F,ngenes=100,genes_to_show=c(),plot_cor=T){
-  plot_tissue=function(mask_tissue,statuses,file_prefix){
-    for (status in statuses){
-      if (status=="Uninflamed"){
-        next()
-      }
-      suffix=paste(file_prefix,status,sep="_")
-      print(suffix)
-      
-      maski=mask_tissue&(statusv==status)
-      
-     
-
-      mask_stratify_list1=list()
-      mask_stratify_list2=list()
-  
-        bav=bulk$design$BA
-        bav[is.na(bav)]=""
-  
-        mask_stratify_list1$beforeT=maski&bav=="beforeT"
-        mask_stratify_list1$afterT=maski&bav=="afterT"
-      
-      
-   
-        treatmentv=bulk$design$treatment
-        treatmentv[is.na(treatmentv)]=""
-        mask_stratify_list2$Pbo=maski&treatmentv=="Pbo"
-        mask_stratify_list2$Ust_130_mg=maski&treatmentv=="Ust 130 mg"
-        mask_stratify_list2$Ust_6_mg_kg=maski&treatmentv=="Ust 6 mg/kg"
-   
-      nx=length(mask_stratify_list1)
-      ny=length(mask_stratify_list2)
-      open_plot(path="output/bulk/",fn=paste("scatter_",suffix,sep=""),plot_type = "pdf",width=4*ny,height=4*nx)
-      layout(matrix(1:(nx*ny),nx,ny,byrow = T))
-      
-      xlim=range(bulk$scores[mask_tissue&(statusv==status),"score1"],na.rm=T)
-      ylim=range(bulk$scores[mask_tissue&(statusv==status),"score2"],na.rm=T)
-    
-      for (i in 1:length(mask_stratify_list1)){
-        for (j in 1:length(mask_stratify_list2)){
-          
-        mask_stratify=mask_stratify_list1[[i]]&mask_stratify_list2[[j]]
-        mask_stratify=mask_stratify&!(is.na(bulk$scores[,"score1"])|is.na(bulk$scores[,"score2"]))
-        if (sum(mask_stratify)<10){
-          plot_cor=F
-        }
-        if (plot_cor){
-          cort_res=cor.test(bulk$scores[mask_stratify,"score1"],bulk$scores[mask_stratify,"score2"],method="spe")
-        }
-        response=ifelse(bulk$design$response[mask_stratify]=="R",responder_col,non_responder_col)
-      #  response=ifelse(bulk$design$prediction=="R",responder_col,non_responder_col)
-        response[is.na(response)]=1
-        if (sum(mask_stratify)>0){
-          plot(bulk$scores[mask_stratify,"score1"],bulk$scores[mask_stratify,"score2"],panel.first=grid(),pch=20,xlab="score1",ylab="score2",cex.axis=.7,col=response,xlim=xlim,ylim=ylim,main=paste(names(mask_stratify_list1)[i],names(mask_stratify_list2)[j]))
-          if (plot_cor){
-            mtext(paste("rho =",format(cort_res$estimate,digits=2),"; p =",format(cort_res$p.value,digits=2)),3,line = -1,adj = 1,cex=.7)
-          }
-        }
-        else {
-          plot.new()
-        }
-        }
-      }
-      close_plot()
-      for (i in 1:length(mask_stratify_list1)){
-     
-          mask_stratify=mask_stratify_list1[[i]]
-          mask_stratify=mask_stratify&!(is.na(bulk$scores[,"score1"])|is.na(bulk$scores[,"score2"]))
-          if (sum(mask_stratify)==0){
-            next
-          }
-          suffix=paste(file_prefix,names(mask_stratify_list1)[i],status,sep="_")
-         
-          if (names(mask_stratify_list1)[i]=='beforeT'){
-            annot_profiles=list()
-            annot_profiles$response=ifelse(bulk$design$response[mask_stratify]=="R",responder_col,non_responder_col)
-        #    annot_profiles$response=ifelse(bulk$design[mask_stratify,"prediction"]=="NR",non_responder_col,responder_col)
-            
-            write.csv(cbind(bulk$design[mask_stratify,1:2],bulk$design[mask_stratify,"prediction"]),file = paste("output/tables/prediction_",suffix,".csv",sep=""))
-            gene_groups_heatmaps(bulk$z[,mask_stratify],genes_to_show$markers1,genes_to_show$markers2,by=bulk$scores[mask_stratify,"score1"],paste("heatmap_",suffix,"_combined_selected_genes",sep=""),annot_profiles=annot_profiles)
-            open_plot(path="output/bulk/",fn=paste("scatter_with_prefictions_",suffix,sep=""),plot_type = "pdf",width=4,height=4)
-            plot(bulk$scores[mask_stratify,"score1"],bulk$scores[mask_stratify,"score2"],col=annot_profiles$response,pch=20,xlab="score1",ylab="score2")
-            close_plot()
-          }
-          
-          for (j in 1:length(mask_stratify_list2)){
-            mask_stratify=mask_stratify_list1[[i]]&mask_stratify_list2[[j]]
-            mask_stratify=mask_stratify&!(is.na(bulk$scores[,"score1"])|is.na(bulk$scores[,"score2"]))
-            if (sum(mask_stratify)==0){
-              next
-            }
-            suffix=paste(file_prefix,names(mask_stratify_list1)[i],names(mask_stratify_list2)[j],status,sep="_")
-            annot_profiles=list()
-       #     annot_profiles$response=ifelse(bulk$design[mask_stratify,"prediction"]=="NR",non_responder_col,responder_col)
-           annot_profiles$response=ifelse(bulk$design$response[mask_stratify]=="R",responder_col,non_responder_col)
-            gene_groups_heatmaps(bulk$z[,mask_stratify],genes_to_show$markers1,genes_to_show$markers2,by=bulk$scores[mask_stratify,"score1"],paste("heatmap_",suffix,"_selected_genes",sep=""),annot_profiles=annot_profiles)
-          }
-        
-      }
-    }
-  }
-  
-  
-  mask=bulk$design$dataset==dataset_name
-  statusv=as.character(bulk$design$status)
-  statusv[is.na(statusv)]=""
-  for (diagnosis in unique(bulk$design[mask,]$diagnosis)){
-    mask_diagnosis=mask&(bulk$design$diagnosis==diagnosis)
-    
-    if (pool_tissues){
-      mask_tissue=mask_diagnosis&(bulk$design$tissue%in%tissues)
-      mask_tissue[is.na(mask_tissue)]=F
-      statuses=setdiff(unique(statusv[mask_tissue]),"")
-      plot_tissue(mask_tissue,statuses,file_prefix=paste(dataset_name,diagnosis,sep="_"))
-    }
-    else {
-      for (tissue in tissues){
-        mask_tissue=mask_diagnosis&(bulk$design$tissue==tissue)
-        mask_tissue[is.na(mask_tissue)]=F
-        statuses=setdiff(unique(statusv[mask_tissue]),"")
-        file_prefix=paste(dataset_name,diagnosis,sep="_")
-        plot_tissue(mask_tissue,statuses,file_prefix=paste(dataset_name,diagnosis,tissue,sep="_"))
-      }
-    }
-  }
-}
-
-
-
-
 
 
 response_cumulative=function(vr,vnr){
@@ -1371,21 +706,103 @@ response_cumulative=function(vr,vnr){
 }
 
 
+
+#######################################################################################################################################
+
+
+main_bulk=function(load_data=F){
   
-
-plot_roc=function(mask){
-  get_xy=function(samp){
-    tmp_tab=table(bulk$design[mask,]$response=="NR",bulk$scores[mask,"score1"]>=bulk$scores[samp,"score1"])
-    tab=matrix(0,2,2,dimnames=list(c(T,F),c(T,F)))
-    tab[rownames(tmp_tab),colnames(tmp_tab)]=tmp_tab
+  
+  lm=ileum_ldm
+  score_thresh<<-list()  
+  responder_col<<-brew_cols[5]
+  non_responder_col<<-brew_cols[4]
+  if (load_data){
+    lbd_res<-load_bulk_datasets(load_text)
+    de_res<<-read.csv(paste(pipeline_path,"input/DE/DE_inf_pat1_vs_pat2_total.csv",sep="/"),row.names = 1)
     
-    x=tab[2,1]/(tab[2,1]+tab[2,2])
-    y=tab[1,1]/(tab[1,1]+tab[1,2])
-    return(c(x,y))
+    bulk<<-lbd_res
+    
   }
-  z=t(sapply(mask,get_xy))
-  z=z[order(z[,1]),]
-  plot(z,panel.first=abline(0,1),type='l',panel.first=abline(0,1))
-}
+  
+  #message("pattern1:",paste(pat1,collaspse=","),"pattern2:",paste(pat2,collaspse=","))
+  inf_pat1<<-inflamed_samples_v2[sample_to_patient[inflamed_samples_v2]%in%pat1]
+  inf_pat2<<-inflamed_samples_v2[sample_to_patient[inflamed_samples_v2]%in%pat2]
+  uninf_pat1<<-uninflamed_samples_v2[sample_to_patient[uninflamed_samples_v2]%in%pat1]
+  uninf_pat2<<-uninflamed_samples_v2[sample_to_patient[uninflamed_samples_v2]%in%pat2]
+  ncells_per_sample=table(lm$dataset$cell_to_sample)
+  
+  
+  s1=apply(lm$dataset$counts[inf_pat1,,],2,sum)
+  s2=apply(lm$dataset$counts[inf_pat2,,],2,sum)
+  ms=apply(lm$dataset$counts[c(inf_pat1,inf_pat2),,],1:2,sum)
+  mm=ms/rowSums(ms)
+  mm1=1e-6+t(mm[inf_pat1,])
+  mm2=1e-6+t(mm[inf_pat2,])
+  
+  afc=log2(rowMeans(mm2)/rowMeans(mm1))
+  
+  s=apply(lm$dataset$counts,2,sum)
+  ms=t(apply(lm$dataset$counts,1:2,sum))
+  ms=t(t(ms)/colSums(ms))
+  
+  mz=(ms-rowMeans(ms))/apply(ms,1,sd)
+  mz=mz[,inflamed_samples]
+  colnames(mz)=sample_to_patient[colnames(mz)]
+  p_thresh=1e-4
+  
+  de_res2=de_res[de_res$adj.p.value<p_thresh,]
+  s_ep=rowSums(sapply(ileum_ldm$dataset$gated_out_umitabs$EP,rowSums))
+  
+  models=cbind(ileum_ldm$model$models,EP=s_ep/sum(s_ep))
+  cluster_to_cluster_set=c(cluster_to_cluster_set,"EP")
+  names(cluster_to_cluster_set)[cluster_to_cluster_set=="EP"]="EP"
+  
+  scores_EP_genes<<-select_genes(max_per_clusterset =20,thresh_cluster=1,thresh_pattern1=1,thresh_pattern2 =.5 ,thresh_freq=1e-6,cluster_to_subtype=cluster_to_subtype,included_cluster_sets1=c("EP"),included_cluster_sets2=c("EP"),restrict_to_included_cluster_sets=F,trace=F)
+  
+  scores_genes<<-select_genes(max_per_clusterset =20,thresh_cluster=3,thresh_pattern1=1,thresh_pattern2 =1,thresh_freq=1e-6,cluster_to_subtype=cluster_to_subtype1,fdr_thresh = 0.001,
+                              included_cluster_sets1=c("Inf. Macrophages","Activated DC","pDC","IgG plasma cells","Naive/CM T cells","Tregs","ACKR1+ endothelial cells","Activated fibroblasts"),
+                              included_cluster_sets2=c("Resident macrophages","moDC","IgA plasma cells","ILC3","Cytokines low Trm","Type 1 cytokines Trm","Type 3 cytokines Trm","Enteric neurons","CD36+ endothelial cells", "Fibroblasts"),
+                              trace=T,restrict_to_included_cluster_sets = T)
+  
+  
+  bulk$scores<<-get_scores(scores_genes$markers1,scores_genes$markers2,bulk$z) 
+  
+  scRNA_scores<<-get_scores(scores_genes$markers1,scores_genes$markers2,mz)
 
+
+  markers<<-scores_genes
+  
+  message("pattern1")
+  print(markers$markers1[sapply(markers$markers1,length)>0])
+  message("pattern2")
+  print(markers$markers2[sapply(markers$markers2,length)>0])
+  write.csv(file=paste(pipeline_path,"score_genes.csv",sep=""),rbind(cbind(geneSymbol=unlist(markers$markers1[sapply(markers$markers1,length)>0]),group="with module"),cbind(geneSymbol=unlist(markers$markers2[sapply(markers$markers2,length)>0]),group="No module")),quote=F,row.names=T)
+  
+  open_plot(main_figures_path,fn="figure_5a",plot_type="pdf",width = 5,height = 5)
+  par(mar=c(4,4,4,4))
+  plot(de_res$log2_FC,-log2(de_res$adj.p.value),xlim=c(-1,1),xlab="Log2(freq(pat2)/freq(pat1))",ylab="FDR adjusted p.value (BH)",cex=.7)
+  close_plot()
+  
+  open_plot(main_figures_path,fn="figure_5b",plot_type="pdf",width = 5,height = 5)
+  plot_figure_4b()
+  close_plot()
+  
+  open_plot(main_figures_path,fn="figure_4c",plot_type="pdf",width = 5,height = 5)
+  plot_figure_4b("Uninflamed")
+  close_plot()
+  
+  
+ 
+  plot_dataset("RISK",tissue="Ileum",genes_to_show = markers,path=main_figures_path)
+  
+  
+  
+  risk_clinical_data(bulk)
+  
+  plot_risk_figures()
+  
+  plot_dataset("CERTIFI",tissue="Ileum",genes_to_show = markers,,path=supp_figures_path)
+
+}
 
