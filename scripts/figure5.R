@@ -43,7 +43,7 @@ read_RISK=function(genes){
   pcdai=env$pcdai
   mask=env$mask
   
-  return(list(raw=m[,mask],design=sample_tab[mask,],clin=clin2[mask,],pcdai=pcdai))
+  return(list(raw=m[,mask],design=sample_tab[mask,],clin=clin2,pcdai=pcdai))
 }
 
 
@@ -492,7 +492,7 @@ load_bulk_datasets=function(load_text=F){
   ##################################
   
   
- 
+ browser()
   
   risk_raw=matrix(NA,length(genes),ncol(l$risk$raw),dimnames = list(genes,colnames(l$risk$raw)))
   risk_raw[rownames(l$risk$raw),]=as.matrix(log(1+l$risk$raw))
@@ -500,9 +500,7 @@ load_bulk_datasets=function(load_text=F){
   risk_design=data.frame(dataset="RISK",subject=l$risk$design$RISK.DNA.ID,geo_accesion=l$risk$design$GEO_ID,sex= sex_conversion[l$risk$design$Gender],diagnosis=diagnosis_conversion[as.character(l$risk$design$Disease.status)],age=l$risk$design$AgeDxYrs.y,tissue="Ileum",status=status_conversion[l$risk$design$Inflammation],deep_ulcer=l$risk$design$Ulceration,BA=NA,treatment=NA,response=l$risk$design$response,B_Dx=l$risk$design$B_Dx,B_Cur=l$risk$design$B_Cur)
   rownames(risk_design)=rownames(l$risk$design)
   design=rbind(cbind(design,B_Dx=NA,B_Cur=NA),risk_design)
-  clin$risk=cbind(l$risk$clin,l$risk$pcdai)
-  
-  
+  clin$risk=transform(merge(l$risk$clin,l$risk$pcdai,by=0,all=TRUE), row.names=Row.names, Row.names=NULL)
   z_exprs=get_all_zscores(raw_exprs,design,sample_set_list)
 
   return(list(raw=raw_exprs,z=z_exprs,design=design,clin=clin))
