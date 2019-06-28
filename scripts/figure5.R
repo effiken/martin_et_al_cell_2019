@@ -578,7 +578,7 @@ select_genes=function(max_per_clusterset=30,thresh_cluster=0.5,thresh_pattern1=1
 #############################################################################################
 
 
-plot_figure_4b=function(status="Inflamed"){
+plot_figure_5b=function(status="Inflamed"){
   before_mask=bulk$design$BA=="beforeT"
   before_mask[is.na(before_mask)]=T
   mask=bulk$design$tissue=="Ileum"&bulk$design$status==status&bulk$design$diagnosis=="CD"&before_mask
@@ -783,11 +783,11 @@ main_bulk=function(load_data=F){
   close_plot()
   
   open_plot(main_figures_path,fn="figure_5b",plot_type="pdf",width = 5,height = 5)
-  plot_figure_4b()
+  plot_figure_5b()
   close_plot()
   
   open_plot(main_figures_path,fn="figure_4c",plot_type="pdf",width = 5,height = 5)
-  plot_figure_4b("Uninflamed")
+  plot_figure_5b("Uninflamed")
   close_plot()
   
   

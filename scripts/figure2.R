@@ -2,7 +2,7 @@ make_figure_correlation_between_subtypes=function(path,prefix,lm,selected_sample
   l=sapply(lm$cluster_sets,unlist)
   v=rep(names(l),sapply(l,length))
   names(v)=unlist(l)
-  freqs=do.call(cbind,normalize_by_clusterset_frequency(lm$dataset,selected_samples,cluster_set=lm$cluster_sets,reg=0.001))
+  freqs=do.call(cbind,normalize_by_clusterset_frequency(lm$dataset$cell_to_cluster,lm$dataset$cell_to_sample,selected_samples,cluster_set=lm$cluster_sets,reg=0.001))
   cormat=cor(log2(freqs))
 
   ord=rev(get_order(seriate(as.dist(1-cormat),method = "GW")))
@@ -63,7 +63,7 @@ inf_uninf_freq_barplot=function(freqs,compartment,fig){
 
 
 make_inf_uninf_freq_barplot=function(){
-  freqs=normalize_by_clusterset_frequency(ileum_ldm$dataset,samples = c(inflamed_samples_filtered,uninflamed_samples_filtered),cluster_sets = ileum_ldm$cluster_sets,pool_subtype = T,reg = 0)
+  freqs=normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,samples = c(inflamed_samples_filtered,uninflamed_samples_filtered),cluster_sets = ileum_ldm$cluster_sets,pool_subtype = T,reg = 0)
   inf_uninf_freq_barplot(freqs,"MNP",fig="s5a")
   inf_uninf_freq_barplot(freqs,"Plasma",fig="s5d")
   inf_uninf_freq_barplot(freqs,"T",fig="s5b")
@@ -82,7 +82,6 @@ figure_2e=function(ncell_per_cluster=300){
   byvec=rep(0,nrow(ds))
   names(byvec)=rownames(ds)
   for (i in 1:length(genes)){
-    print(i)
     byvec[genes[[i]]]=names(genes)[i]
   }
   clusters=unlist(ileum_ldm$cluster_sets$T)
@@ -140,8 +139,8 @@ figure_2j=function(){
 }
 
 freq_barplot=function(fn,cell_type,subtypes=NA){
-  inf=colMeans(normalize_by_clusterset_frequency(ileum_ldm$dataset,samples = inflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg = 0)[[cell_type]])
-  uninf=colMeans(normalize_by_clusterset_frequency(ileum_ldm$dataset,samples = uninflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg = 0)[[cell_type]])
+  inf=colMeans(normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,samples = inflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg = 0)[[cell_type]])
+  uninf=colMeans(normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,samples = uninflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg = 0)[[cell_type]])
   if (is.na(subtypes)){
     subtypes=names(inf)[order(inf/uninf)]
   }
@@ -229,22 +228,22 @@ run_gene_modules_analysis=function(){
 
 
 numbers_figures2=function(){
-  l=list()
+
   
   ### Inf.MAcs inf uninf fold change
   mask_inf=ileum_ldm$dataset$cell_to_sample%in%inflamed_samples_filtered
   mask_uninf=ileum_ldm$dataset$cell_to_sample%in%uninflamed_samples_filtered
   cluster_sets=ileum_ldm$cluster_sets
-  freq_norm_inf=(normalize_by_clusterset_frequency(ileum_ldm$dataset,inflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg = 1e-3)$MNP)
-  freq_norm_uninf=(normalize_by_clusterset_frequency(ileum_ldm$dataset,uninflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg =1e-3)$MNP)
+  freq_norm_inf=(normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,inflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg = 1e-3)$MNP)
+  freq_norm_uninf=(normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,uninflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg =1e-3)$MNP)
   
   mean_inf=colMeans(freq_norm_inf)
   mean_uninf=colMeans(freq_norm_uninf)
   fc=mean_inf/mean_uninf
   
-  l[["Inf. Macrophages Freq Inflamed/Uninflamed"]]=fc["Inf. Macrophages"]
-  l[["Activated DC Freq Inflamed/Uninflamed"]]=fc["Activated DC"]
-  return(l)
+  stats$"Inf. Macrophages Freq Inflamed/Uninflamed"<<-fc["Inf. Macrophages"]
+  stats$"Activated DC Freq Inflamed/Uninflamed"<<-fc["Activated DC"]
+
 }
 
 
@@ -265,7 +264,7 @@ table_s9=function(){
 
 
 make_figure2=function(){
-  message("Making Fig 1, Fig S1-2 and tables 2-3")
+
   
   make_avg_heatmaps()
   
@@ -290,7 +289,7 @@ make_figure2=function(){
   make_truth_plot(clusters = c(unlist(ileum_ldm$cluster_sets$MNP$`Resident macrophages`),unlist(ileum_ldm$cluster_sets$MNP$`Inf. Macrophages`)),gene_list_fn ="gene_list_figure_2b.txt" ,figure_fn ="figure_2b",ncell_per_cluster = 300,gene_list_path=gene_list_path,path=main_figures_path)
   #Stroma
   make_truth_plot(clusters = unlist(ileum_ldm$cluster_sets$Stromal),gene_list_fn ="gene_list_figure_2g.txt" ,figure_fn ="figure_2g",gene_list_path=gene_list_path,path=main_figures_path)
-  print(numbers_figures2())
+
   table_s9()
   figure_2e()
   figure_2j()

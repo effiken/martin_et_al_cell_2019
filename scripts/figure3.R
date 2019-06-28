@@ -38,8 +38,8 @@ plot_all_subtype_freqs_per_patient=function(){
   
   
   cluster_sets=ileum_ldm$cluster_sets
-  freq_norm_inf=normalize_by_clusterset_frequency(ileum_ldm$dataset,inflamed_samples_filtered,cluster_sets = cluster_sets,pool_subtype = T,reg = 0)
-  freq_norm_uninf=normalize_by_clusterset_frequency(ileum_ldm$dataset,uninflamed_samples_filtered,cluster_sets =cluster_sets,pool_subtype = T,reg = 0)
+  freq_norm_inf=normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,inflamed_samples_filtered,cluster_sets = cluster_sets,pool_subtype = T,reg = 0)
+  freq_norm_uninf=normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,uninflamed_samples_filtered,cluster_sets =cluster_sets,pool_subtype = T,reg = 0)
   cormat=(cor(t(do.call(cbind,freq_norm_inf))))
   ordp=sample_to_patient[rownames(cormat)[get_order(seriate(as.dist(1-cormat)))]]
   celltypes=c("MNP","Stromal","T","Plasma")
@@ -66,16 +66,16 @@ geometric_mean_panel=function(ordp=paste("rp",c(5,7,8,12,11,14,15,10,13))){
   module_cell_types=c("IgG plasma cells","Activated DC","Inf. Macrophages","Activated fibroblasts","ACKR1+ endothelial cells","Highly activated T cells")
  # module_cell_types=c("IgG plasma cells","mature DC","Inf. Macrophages","Activated fibroblasts","ACKR1+ endothelial cells")
   reg=0.001
-  freqs_inf=do.call(cbind,normalize_by_clusterset_frequency(ileum_ldm$dataset,samples = inflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg = reg))
+  freqs_inf=do.call(cbind,normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,samples = inflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg = reg))
   score_inf=exp(rowMeans(log(reg+freqs_inf[,module_cell_types])))
   names(score_inf)=sample_to_patient[names(score_inf)]
-  freqs_uninf=do.call(cbind,normalize_by_clusterset_frequency(ileum_ldm$dataset,samples = uninflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg = reg))
+  freqs_uninf=do.call(cbind,normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,samples = uninflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg = reg))
   score_uninf=exp(rowMeans(log(reg+freqs_uninf[,module_cell_types])))
   names(score_uninf)=sample_to_patient[names(score_uninf)]
   
   ttest_res=t.test(score_inf[pat1],score_inf[pat2])
-  print(ttest_res$statistic)
-  print(ttest_res$p.value)
+  stats$geometric_mean_t_test_statistic<<-(ttest_res$statistic)
+  stats$geometric_mean_t_test_pval<<-(ttest_res$p.value)
   open_plot(path = main_figures_path,"figure_3b",plot_type = "pdf",5,3)
   layout(matrix(1:2,1,2),widths=c(4.5,3))
   par(mar=c(4,5,2,2))
@@ -89,26 +89,6 @@ geometric_mean_panel=function(ordp=paste("rp",c(5,7,8,12,11,14,15,10,13))){
 
 
 
-gene_per_compartment=function(genes,put_legend=T){
-  get_one=function(clusters,gene="TNF"){
-    return(apply(counts[,gene,unlist(clusters),drop=F],1,sum)/sum(counts[,,unlist(clusters),drop=F]))
-  }
-  counts=ileum_ldm$dataset$counts-ileum_ldm$dataset$noise_counts
-  for (gene in genes){
-    print(gene)
-    m=t(sapply(ileum_ldm$cluster_sets,get_one,gene=gene))[intersect(names(ileum_ldm$cluster_sets),names(celltypes_cols1)),inflamed_samples]
-    colnames(m)=sample_to_patient[colnames(m)]
-    open_plot("output/supp_figures/",paste(gene,"_per_compartment",sep=""),6,6,plot_type = "pdf")
-    print(paste(gene,"_per_compartment",sep=""))
-    par(mar=c(5,8,1,1))
-    barplot(m[,c(pat1,pat2)],col=celltypes_cols1[rownames(m)],las=2)
-    mtext(paste("Total ",gene),side = 2,line = 6)
-    if (put_legend){
-      legend("topright",legend=names(celltypes_cols1[rownames(m)]),col=celltypes_cols1[rownames(m)],pch=15)
-    }
-    close_plot()
-  }
-}
 
 
 
@@ -117,5 +97,4 @@ make_figure3=function(){
   ordp=plot_all_subtype_freqs_per_patient()
   geometric_mean_panel(ordp=ordp)
  
-#  gene_per_compartment(c("OSM","IL1B","CXCL8","IL6","CCL3","CCL4","IL11","CSF3","IL1A","CSF2","IL22","IFNG","CCL2","IL17A","CXCL2","CXCL3","CXCL5","CXCL6","CXCL1","CXCL9","CXCL10","CXCL11"))
   }

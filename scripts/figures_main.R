@@ -184,7 +184,7 @@ create_global_vars=function(pipeline_path){
   
   
   
-  
+  stats<<-list()
   
   brew_cols<<-rep(brewer.pal(12,"Set3"),10)
   colgrad<<-c(colorRampPalette(c("white",colors()[378],"orange", "tomato","mediumorchid4"))(100))

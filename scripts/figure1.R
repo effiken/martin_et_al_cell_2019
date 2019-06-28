@@ -254,9 +254,9 @@ figure_s2e=function(){
 figure_1h_s2f_s2g=function(){
   
   reg=1e-3
-  mat_inf_freq= t(do.call(cbind,normalize_by_clusterset_frequency(ileum_ldm$dataset,inflamed_samples_filtered,cluster_sets = ileum_ldm$cluster_sets[setdiff(names(ileum_ldm$cluster_sets),"Mast")] ,pool_subtype=T,reg=reg)))
+  mat_inf_freq= t(do.call(cbind,normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,inflamed_samples_filtered,cluster_sets = ileum_ldm$cluster_sets[setdiff(names(ileum_ldm$cluster_sets),"Mast")] ,pool_subtype=T,reg=reg)))
   colnames(mat_inf_freq)=paste(colnames(mat_inf_freq),"inf")
-  mat_uninf_freq=t(do.call(cbind,normalize_by_clusterset_frequency(ileum_ldm$dataset,uninflamed_samples_filtered,cluster_sets =  ileum_ldm$cluster_sets[setdiff(names(ileum_ldm$cluster_sets),"Mast")] ,pool_subtype=T,reg=reg)))
+  mat_uninf_freq=t(do.call(cbind,normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,uninflamed_samples_filtered,cluster_sets =  ileum_ldm$cluster_sets[setdiff(names(ileum_ldm$cluster_sets),"Mast")] ,pool_subtype=T,reg=reg)))
   colnames(mat_uninf_freq)=paste(colnames(mat_uninf_freq),"uninf")
   
   z=log2(cbind(mat_inf_freq,mat_uninf_freq));z2=apply(z,1,quantile,c(.15,.85))
@@ -342,19 +342,14 @@ figure_1h_s2f_s2g=function(){
   title(main="loadings PC1")
   close_plot()
   
-  # TODO: check if this t-test is used
- # print(t.test(pca_scores[grep(" inf",rownames(pca_scores),val=T),1]-pca_scores[grep(" uninf",rownames(pca_scores),val=T),1]))
+
+  stats$pca_t_test<<-t.test(pca_scores[grep(" inf",rownames(pca_scores),val=T),1]-pca_scores[grep(" uninf",rownames(pca_scores),val=T),1])
 
 
 }
 
 
 
-general_stats=function(){
-  ncells_gut<<-sum(table(ileum_ldm$clustAnnots[ileum_ldm$dataset$cell_to_cluster]))
-  ncells_blood<<-sum(table(blood_ldm$clustAnnots[blood_ldm$dataset$cell_to_cluster]))
-  ncells_total<<-ncells_gut+ncells_blood
-}
 
 
 
@@ -675,6 +670,15 @@ make_gene_reference_table=function(){
   
 }
 
+
+numbers_figures1=function(){
+  
+  stats$total_number_of_lamina_propria_cells<<-sum(table(ileum_ldm$dataset$cell_to_sample)[c(inflamed_samples,uninflamed_samples)])
+  stats$cell_per_cluster_range<<-range(table(ileum_ldm$dataset$cell_to_cluster[ileum_ldm$dataset$cell_to_sample%in%c(inflamed_samples,uninflamed_samples)]))
+  stats$number_of_clusters<<-length(table(ileum_ldm$dataset$cell_to_cluster[ileum_ldm$dataset$cell_to_sample%in%c(inflamed_samples,uninflamed_samples)]))
+  
+}
+
 make_figure1=function(){
   #also making supp figures 1-2 and supp tables 2-3
   message("Making Fig 1, Fig S1-2 and tables 2-3")
@@ -700,4 +704,6 @@ make_figure1=function(){
   figure_s2e()
   table_s2()
   table_s3()
+  
+  numbers_figures1()
 }
