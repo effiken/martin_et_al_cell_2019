@@ -16,11 +16,11 @@ plot_pbmc_truth=function(zlim=c(0,3)){
   }
   cells=unlist(l)
   ds=ds[,cells]
-  gene_listp=readLines(paste(pipeline_path,"input/gene_lists/gene_list_figure_s8a.txt",sep=""))
+  gene_listp=readLines(paste(pipeline_path,"input/gene_lists/gene_list_figure_s6e.txt",sep=""))
   gene_listp_adj=adjust_gene_names(gene_listp,row.names(ds))
   gene_listp_adj=gene_listp_adj[gene_listp_adj%in%rownames(ds)]
 
-  open_plot(path=supp_figures_path,fn = "figure_s8a",plot_type = "png",width = 3000,height = 2000)
+  open_plot(path=supp_figures_path,fn = "figure_s6e",plot_type = "png",width = 3000,height = 2000)
   plot_truth_heatmap(ds,cell_to_sample =blood_ldm$dataset$cell_to_sample[colnames(ds)],
                      cell_to_cluster = blood_ldm$dataset$cell_to_cluster[colnames(ds)],
                      insamples = blood_samples,

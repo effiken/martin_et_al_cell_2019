@@ -222,7 +222,7 @@ figure_1g=function(){
 }
 
 # distance_between_inf_uninf
-figure_s2e=function(){
+figure_s1o=function(){
   pool_subtypes_frequencies=function (lm, samples, cluster_sets, pool_subtype = T) {
     cluster_sets=cluster_sets[!names(cluster_sets)%in%"Not good"]
     get_freqs=function(lm,selected_samples){
@@ -243,7 +243,7 @@ figure_s2e=function(){
   }
   freqs_inf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,inflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
   freqs_uninf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,uninflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
-  open_plot(path = main_figures_path,fn = "figure_s2e",plot_type = "pdf",6,6)
+  open_plot(path = main_figures_path,fn = "figure_s1o",plot_type = "pdf",6,6)
   par(mar=c(5,5,1,1))
   barplot(sqrt(colSums(((freqs_inf-freqs_uninf)/((freqs_inf+freqs_uninf)/2))^2)),ylim=c(0,.8),ylab="dissimilarity (inf vs uninf",border=F,cex.names = .7)
   close_plot()
@@ -314,13 +314,13 @@ figure_1h_s2f_s2g=function(){
   title(paste(round(100*sum(pca_res$sdev[1]^2)/sum(pca_res$sdev^2),digits=1),"% of variance explained by PC1"),cex=.7)
   close_plot()
   
-  open_plot(path=supp_figures_path,fn="figure_s2f_with_labels",plot_type = "pdf",width = 5,height = 5)
+  open_plot(path=supp_figures_path,fn="figure_s1p_with_labels",plot_type = "pdf",width = 5,height = 5)
   #  plot_one_pca(1,2)
   plot_one_pca(1,2)
   title(paste(round(100*sum(pca_res$sdev[1:2]^2)/sum(pca_res$sdev^2),digits=1),"% of variance explained by PC1+PC2"))
   close_plot()
   
-  open_plot(path=supp_figures_path,fn="figure_s2f",plot_type = "pdf",width = 5,height = 5)
+  open_plot(path=supp_figures_path,fn="figure_s1p",plot_type = "pdf",width = 5,height = 5)
   plot_one_pca(1,2,with_labels = F)
   title(paste(round(100*sum(pca_res$sdev[1:2]^2)/sum(pca_res$sdev^2),digits=1),"% of variance explained by PC1+PC2"),cex=.7)
   close_plot()
@@ -337,7 +337,7 @@ figure_1h_s2f_s2g=function(){
     barplot(m,col=celltypes_cols1[subtype_to_clusterset[names(m)]],names.arg = names(m),ylim=ylim,add=T,las=2,cex.names = .4)
   }
   
-  open_plot(path=supp_figures_path,fn="figure_s2g",plot_type = "pdf",width = 4,height = 4)
+  open_plot(path=supp_figures_path,fn="figure_s1q",plot_type = "pdf",width = 4,height = 4)
   plot_comp(1)
   title(main="loadings PC1")
   close_plot()
@@ -687,7 +687,7 @@ make_figure1=function(){
   # figure 1c, 1f:
   make_truth_plots()
   figure_1d()
-  #figure 1e s2b:
+  #figure 1e s1l:
   cytof_comparison()
   figure_1g()
   figure_1h_s2f_s2g()
@@ -701,7 +701,7 @@ make_figure1=function(){
   figure_s1j()
   figure_s1k()
   
-  figure_s2e()
+  figure_s1o()
   table_s2()
   table_s3()
   

@@ -204,10 +204,10 @@ make_avg_heatmaps=function(zlim=c(-2,3)){
     close_plot()
     
     # avg_heatmap_stromal_cells
-    genes=read_genes("gene_list_figure_s3b.txt")
+    genes=read_genes("gene_list_figure_s2b.txt")
     genes=intersect(genes,rownames(ileum_ldm$model$models))
     clusters=c("41","15","2","8","31","24","32","40")
-    open_plot(supp_figures_path,fn='figure_s3b',plot_type = "pdf",width = 3.5,height = 1.5)
+    open_plot(supp_figures_path,fn='figure_s2b',plot_type = "pdf",width = 3.5,height = 1.5)
     par(mar=c(4,5,1,1))
     plot_avg_heatmap(ileum_ldm$model$models[genes,clusters],genes=genes,gene.cols = 1,clusters = clusters,clusters_text = "",annots = cluster_to_subtype1[clusters],zlim=zlim,main_title = "",Relative_or_Absolute = "Relative",colgrad = colgrad_rel,reg=1e-6,cex.genes = .7,cex.clusters = .5,line.genes = .1)
     close_plot()
@@ -274,17 +274,17 @@ make_figure2=function(){
   freq_barplot("figure_2i_Stromal",cell_type = "Stromal")
   
   #ILC_inf_uninf_freq
-  freq_barplot("figure_S4g",cell_type = "ILC")
+  freq_barplot("figure_s3g",cell_type = "ILC")
   
   gene_list_path=paste(pipeline_path,"input/gene_lists/",sep="/")
   #T-cells 
-  make_truth_plot(clusters = unlist(ileum_ldm$cluster_sets$T),gene_list_fn ="gene_list_figure_s4e.txt" ,figure_fn ="figure_s4e",gene_list_path=gene_list_path,path=supp_figures_path)
+  make_truth_plot(clusters = unlist(ileum_ldm$cluster_sets$T),gene_list_fn ="gene_list_figure_s3e.txt" ,figure_fn ="figure_s3e",gene_list_path=gene_list_path,path=supp_figures_path)
   #DCs
   make_truth_plot(clusters = c(unlist(ileum_ldm$cluster_sets$MNP$moDC),unlist(ileum_ldm$cluster_sets$MNP$DC2),unlist(ileum_ldm$cluster_sets$MNP$DC1),unlist(ileum_ldm$cluster_sets$MNP$`Activated DC`),unlist(ileum_ldm$cluster_sets$MNP$pDC)),gene_list_fn ="gene_list_figure_2c.txt" ,figure_fn ="figure_2b",use_default_cluster_order=F,ncell_per_cluster = 500,,gene_list_path=gene_list_path,path=main_figures_path)
   #Plasma and B cells
-  make_truth_plot(clusters = c(unlist(ileum_ldm$cluster_sets$B),unlist(ileum_ldm$cluster_sets$Plasma)),gene_list_fn ="gene_list_figure_s4a.txt" ,figure_fn ="figure_s4a",gene_list_path=gene_list_path,path=supp_figures_path)
+  make_truth_plot(clusters = c(unlist(ileum_ldm$cluster_sets$B),unlist(ileum_ldm$cluster_sets$Plasma)),gene_list_fn ="gene_list_figure_s3a.txt" ,figure_fn ="figure_s3a",gene_list_path=gene_list_path,path=supp_figures_path)
   #ILC
-  make_truth_plot(clusters = unlist(ileum_ldm$cluster_sets$ILC),gene_list_fn ="gene_list_figure_s4f.txt" ,figure_fn ="figure_s4f",ncell_per_cluster = 300,gene_text_cex=2,gene_list_path=gene_list_path,path=supp_figures_path)
+  make_truth_plot(clusters = unlist(ileum_ldm$cluster_sets$ILC),gene_list_fn ="gene_list_figure_s3f.txt" ,figure_fn ="figure_s3f",ncell_per_cluster = 300,gene_text_cex=2,gene_list_path=gene_list_path,path=supp_figures_path)
   #Macrophages
   make_truth_plot(clusters = c(unlist(ileum_ldm$cluster_sets$MNP$`Resident macrophages`),unlist(ileum_ldm$cluster_sets$MNP$`Inf. Macrophages`)),gene_list_fn ="gene_list_figure_2b.txt" ,figure_fn ="figure_2b",ncell_per_cluster = 300,gene_list_path=gene_list_path,path=main_figures_path)
   #Stroma
