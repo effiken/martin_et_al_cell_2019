@@ -12,10 +12,6 @@ download_files=function(pipeline_path){
   
   
   dir.create(paste(pipeline_path,"input","external_cohorts_data",sep="/"),showWarnings = F)
-  download.file("https://www.dropbox.com/s/4std4kvro7azpxv/certifi.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","certifi.rd",sep="/"))
-  download.file("https://www.dropbox.com/s/x47sfpfqze2larh/risk.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","risk.rd",sep="/"))
-  download.file("https://www.dropbox.com/s/pojwdxcdbexhkxw/uniti-1.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","uniti-1.rd",sep="/"))
-  download.file("https://www.dropbox.com/s/r5nu2mpxws8ryml/uniti-2.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","uniti-2.rd",sep="/"))
   dir.create(paste(pipeline_path,"input","DE",sep="/"),showWarnings = F)
   download.file("https://www.dropbox.com/s/4emrgk7g2xb9o0m/DE_inf_pat1_vs_pat2_total.csv?dl=1",destfile = paste(pipeline_path,"input","DE","DE_inf_pat1_vs_pat2_total.csv",sep="/"))
 }

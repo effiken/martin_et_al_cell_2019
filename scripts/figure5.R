@@ -708,7 +708,7 @@ response_cumulative=function(vr,vnr){
 #######################################################################################################################################
 
 
-main_bulk=function(load_data=F){
+main_bulk=function(download_data=T,load_data=F){
   
   
   lm=ileum_ldm
@@ -717,10 +717,25 @@ main_bulk=function(load_data=F){
   non_responder_col<<-brew_cols[4]
   if (load_data){
     lbd_res<-load_bulk_datasets(load_text)
+    mask=rownames(lbd_res$design[lbd_res$design$diagnosis=="CD"&lbd_res$design$tissue=="Ileum"&(lbd_res$design$BA=="beforeT"|is.na(lbd_res$design$BA)),])
+    lbd_res2=list()
+    lbd_res2$design=lbd_res$design[mask,]
+    lbd_res2$raw=lbd_res$raw[,mask]
+    lbd_res2$z=lbd_res$z[,mask]
+    lbd_res2$design$deep_ulcer=NULL
+    lbd_res2$design$B_Cur=NULL
+    lbd_res2$design$B_Dx=NULL
+    lbd_res2$design$age=NULL
+    bulk=lbd_res2
+    
+    
     de_res<<-read.csv(paste(pipeline_path,"input/DE/DE_inf_pat1_vs_pat2_total.csv",sep="/"),row.names = 1)
     
-    bulk<<-lbd_res
-    
+    save(file="~/Downloads/bulk_data.rd",bulk)
+  }
+  if (download_data){
+    download.file("https://www.dropbox.com/s/vlt5zj8gpphp8hz/bulk_data.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","bulk_data.rd",sep="/"))
+    load(paste(pipeline_path,"input","external_cohorts_data","bulk_data.rd",sep="/"))
   }
   
   #message("pattern1:",paste(pat1,collaspse=","),"pattern2:",paste(pat2,collaspse=","))
@@ -794,10 +809,9 @@ main_bulk=function(load_data=F){
  
   plot_dataset("RISK",tissue="Ileum",genes_to_show = markers,path=main_figures_path)
   
-  
-  
-  risk_clinical_data(bulk)
-  
+  if (!is.null(bulk$clin)){
+    risk_clinical_data(bulk)
+  }
   plot_risk_figures()
   
   plot_dataset("CERTIFI",tissue="Ileum",genes_to_show = markers,,path=supp_figures_path)
