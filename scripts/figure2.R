@@ -75,7 +75,7 @@ make_inf_uninf_freq_barplot=function(){
 
 figure_2e=function(ncell_per_cluster=300){
   
-  tcell_list=read.table(paste(pipeline_path,"input/gene_lists/gene_list_figure_3a.txt",sep="/"),row.names = 1,header=T,stringsAsFactors = F,sep="\t")
+  tcell_list=read.table(paste(pipeline_path,"input/gene_lists/gene_list_figure_2e.txt",sep="/"),row.names = 1,header=T,stringsAsFactors = F,sep="\t")
   genes=strsplit(tcell_list[,1],",| ,|, ")
   names(genes)=rownames(tcell_list)
   ds=ileum_ldm$dataset$ds[[3]]
@@ -261,6 +261,24 @@ table_s9=function(){
   write.csv(file=paste(pipeline_path,"output/tables/table_s9.csv",sep="/"),as.matrix(lm),quote = F,row.names = T)
 }
 
+
+tables_s3=function(){
+  gene_lists=c(
+  fig_1c="gene_list_figure_1c.txt",
+  fig_1f="gene_list_figure_1f.txt",
+  fig_2a="gene_list_figure_2a.txt",
+  fig_2b="gene_list_figure_2b.txt",
+  fig_2c="gene_list_figure_2c.txt",
+  fig_2d="gene_list_figure_2d.txt",
+  fig_2f="gene_list_figure_2f.txt",
+  fig_2g="gene_list_figure_2g.txt",
+  fig_2h="gene_list_figure_2h.txt",
+  fig_s2b="gene_list_figure_s2b.txt",
+  fig_s3a="gene_list_figure_s3a.txt",
+  fig_s3e="gene_list_figure_s3e.txt",
+  fig_s3f="gene_list_figure_s3f.txt",
+  fig_s6e="gene_list_figure_s6e.txt")
+}
 
 
 make_figure2=function(){

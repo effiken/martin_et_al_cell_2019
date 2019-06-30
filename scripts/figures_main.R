@@ -217,6 +217,36 @@ make_common_stats=function(){
 
 
 
+
+table_s4=function(){
+  gene_lists_fn=c(
+    fig_1c="input/gene_lists/gene_list_figure_1c.txt",
+    fig_1f="input/gene_lists/gene_list_figure_1f.txt",
+    fig_2a="input/gene_lists/gene_list_figure_2a.txt",
+    fig_2b="input/gene_lists/gene_list_figure_2b.txt",
+    fig_2c="input/gene_lists/gene_list_figure_2c.txt",
+    fig_2d="input/gene_lists/gene_list_figure_2d.txt",
+    fig_2f="input/gene_lists/gene_list_figure_2f.txt",
+    fig_2g="input/gene_lists/gene_list_figure_2g.txt",
+    fig_2h="input/gene_lists/gene_list_figure_2h.txt",
+    fig_s2b="input/gene_lists/gene_list_figure_s2b.txt",
+    fig_s3a="input/gene_lists/gene_list_figure_s3a.txt",
+    fig_s3e="input/gene_lists/gene_list_figure_s3e.txt",
+    fig_s3f="input/gene_lists/gene_list_figure_s3f.txt",
+    fig_s6e="input/gene_lists/gene_list_figure_s6e.txt")
+
+  gene_lists=sapply(paste(pipeline_path,gene_lists_fn,sep="/"),function(x){strsplit(readLines(x),",|, ")})
+  names(gene_lists)=names(gene_lists_fn)
+  
+  max_ngenes=max(sapply(gene_lists,length))
+  m=sapply(gene_lists,function(x){c(x,rep("",max_ngenes-length(x)))})
+  write.csv(file=paste(pipeline_path,"output/tables/table_s4.csv",sep="/"),m,quote = F,row.names = F)
+  
+ 
+}
+
+
+
 main=function(pipeline_path,download_data=T,only_load_data=F,make_figures=T){
   library(RColorBrewer)
   library(gplots)
@@ -261,7 +291,8 @@ main=function(pipeline_path,download_data=T,only_load_data=F,make_figures=T){
     message("Making figure 3")
     make_figure3()
   #  my_source("chem_cyt3.R")
-    
+   
+    table_s4() 
   }
 }
 

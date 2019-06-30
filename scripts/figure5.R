@@ -783,14 +783,7 @@ main_bulk=function(download_data=T,load_data=F){
   
   scRNA_scores<<-get_scores(scores_genes$markers1,scores_genes$markers2,mz)
 
-
-  markers<<-scores_genes
-  
-  message("pattern1")
-  print(markers$markers1[sapply(markers$markers1,length)>0])
-  message("pattern2")
-  print(markers$markers2[sapply(markers$markers2,length)>0])
-  write.csv(file=paste(pipeline_path,"score_genes.csv",sep=""),rbind(cbind(geneSymbol=unlist(markers$markers1[sapply(markers$markers1,length)>0]),group="with module"),cbind(geneSymbol=unlist(markers$markers2[sapply(markers$markers2,length)>0]),group="No module")),quote=F,row.names=T)
+  write.csv(file=paste(pipeline_path,"/output//tables/score_genes_figure_5d.csv",sep=""),rbind(cbind(geneSymbol=unlist(scores_genes$markers1[sapply(scores_genes$markers1,length)>0]),group="with GIMATS"),cbind(geneSymbol=unlist(scores_genes$markers2[sapply(scores_genes$markers2,length)>0]),group="without GIMATS")),quote=F,row.names=T)
   
   open_plot(main_figures_path,fn="figure_5a",plot_type="pdf",width = 5,height = 5)
   par(mar=c(4,4,4,4))
@@ -807,14 +800,14 @@ main_bulk=function(download_data=T,load_data=F){
   
   
  
-  plot_dataset("RISK",tissue="Ileum",genes_to_show = markers,path=main_figures_path)
+  plot_dataset("RISK",tissue="Ileum",genes_to_show = scores_genes,path=main_figures_path)
   
   if (!is.null(bulk$clin)){
     risk_clinical_data(bulk)
   }
   plot_risk_figures()
   
-  plot_dataset("CERTIFI",tissue="Ileum",genes_to_show = markers,,path=supp_figures_path)
+  plot_dataset("CERTIFI",tissue="Ileum",genes_to_show = scores_genes,,path=supp_figures_path)
 
 }
 
