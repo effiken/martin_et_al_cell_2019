@@ -1,4 +1,4 @@
-
+source(paste(pipeline_path,"/scripts/ligand_receptor_analysis.R",sep=""))
 plot_pbmc_truth=function(zlim=c(0,3)){
   clusters_to_exclude=c()
   clusters=setdiff(blood_ldm$cluster_order,clusters_to_exclude)
@@ -126,4 +126,5 @@ plot_macs_grads=function(){
 main_figure_4=function(){
   plot_pbmc_truth()
   figure_4e()
+  main_ligand_receptor()
 }

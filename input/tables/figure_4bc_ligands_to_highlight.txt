@@ -1,0 +1,1 @@
+ligands	color"IL6"	"1""CSF1,TGFB1"	"blue1""TNF,OSM, IL1B,IL1A,IL23A"	"#33A02C""CCL17,CCL22,CCL19,EBI3"	"violetred""CSF2"	"1""CXCL9,CXCL10,CXCL11"	"darkgoldenrod1"
