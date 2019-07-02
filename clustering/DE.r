@@ -14,8 +14,6 @@ DE_between_two_sets=function(ldm,mask_bg,mask_fg,nmin_umi_thresh=0,nmin_cells_wi
       mask_samp=colnames(u)[colnames(u)%in%names(which(ldm$dataset$cell_to_sample==samples[sampi]))]
       ncells=table(ldm$dataset$cell_to_cluster[mask_samp])
       mat_noise=t(t(ldm$dataset$noise_counts[sampi,gene_mask,ldm$dataset$cell_to_cluster[mask_samp]])/as.vector(ncells[ldm$dataset$cell_to_cluster[mask_samp]]))
-#    noise=matrix(ldm$dataset$beta_noise[ldm$dataset$cell_to_sample[colnames(u)]],nrow(u),ncol(u),byrow=T)*ldm$dataset$noise_models[rownames(u),ldm$dataset$cell_to_sample[colnames(u)]]
-    #u[,mask_samp]=pmax(u[,mask_samp]-mat_noise,0)
       u[,mask_samp]=u[,mask_samp]-mat_noise
     }
   }
@@ -41,8 +39,6 @@ DE_between_two_sets=function(ldm,mask_bg,mask_fg,nmin_umi_thresh=0,nmin_cells_wi
     m_fg=t(t(s_fg)/colSums(s_fg))
     log2_fc=log2((reg+m_fg)/(reg+m_bg))
     ncounts_bigger=ncounts_bigger+rowSums(abs(log2_fc)>=abs(obs_log2_fc))
-
-#    save(file="de_current_iter.rd",i)
   }
   p.value=ncounts_bigger/(i*n_per_chunk)
   adj.p.value=p.adjust(p.value,method = "BH")
@@ -60,13 +56,6 @@ plot_de_volcano=function(de,fn,xsize=8,ysize=8,xlim=c(-1,1),main=""){
 }
 
 
-#DE_pat1_vs_pat2=function(){
-#  inf_pat1=inflamed_samples[sample_to_patient[inflamed_samples]%in%pat1]
-#  inf_pat2=inflamed_samples[sample_to_patient[inflamed_samples]%in%pat2]
-#  mask1=colnames(ileum_ldm$dataset$umitab)[ileum_ldm$dataset$cell_to_sample%in%inf_pat1]
-#  mask2=colnames(ileum_ldm$dataset$umitab)[ileum_ldm$dataset$cell_to_sample%in%inf_pat2]
-#  de_res=DE_between_two_sets(ileum_ldm,mask1,mask2,nchunks=1000,n_per_chunk=100,reg=1e-7)
-#}
 
 DE_tregs_pat1_vs_pat2=function(){
   inf_pat1=inflamed_samples[sample_to_patient[inflamed_samples]%in%pat1]
