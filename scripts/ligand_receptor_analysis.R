@@ -432,40 +432,37 @@ bin_plot2=function(subtype1,subtype2,mat,ord1,ord2,stats,fdr_thresh=1e-2,figure_
   close_plot()
 }
 
-pairwise_intensity_maps=function(st=c("Macrophages","Fibroblasts","DC","T","Endothelial"),tables_output_path,load_stats=T){
+
+pairwise_intensity_maps=function(st,tables_output_path,load_stats=F){
   intensity_score1=c()
   intensity_score2=c()
   pair_mask=c()
   interaction_stats=c()
   if (load_stats){
+    load(file=paste(pipeline_path,"/intermediates/ligand_receptor.rd",sep=""))
   }
   else{
     res_l=list()
-    for (i in 1:(length(st))){
-      res_l[[i]]=list()
-        for (j in (1:length(st))){
-        if (i==j){
-          next
-        }
-        res=get_two_subtypes_interactions(st[i],st[j],tables_output_path = tables_output_path)
-        res_l[[i]][[j]]=res
-        interaction_stats=rbind(interaction_stats,res$stats_mat)
-        intensity_score1=c(intensity_score1,res$intensity_score1)
-        intensity_score2=c(intensity_score2,res$intensity_score2)
-        pair_mask=c(pair_mask,res$pair_mask)
-      }
+    for (i in 1:nrow(st)){
+      subtype1=as.character(st[i,1])
+      subtype2=as.character(st[i,2])
+      key_s=paste(subtype1,subtype2,sep="_")
+      
+      res_l[[key_s]]=get_two_subtypes_interactions(subtype1,subtype2,tables_output_path = tables_output_path)
+      interaction_stats=rbind(interaction_stats,res_l[[key_s]][["stats_mat"]])
+      intensity_score1=c(intensity_score1,res_l[[key_s]][["intensity_score1"]])
+      intensity_score2=c(intensity_score2,res_l[[key_s]][["intensity_score2"]])
+      pair_mask=c(pair_mask,res_l[[key_s]][["pair_mask"]])
     }
+    interaction_stats$adj.p.value=p.adjust(interaction_stats$p.value)
+    save(list = c("res_l","interaction_stats","intensity_score1","intensity_score2","pair_mask"),file=paste(pipeline_path,"/intermediates/ligand_receptor.rd",sep=""))
   }
-  interaction_stats$adj.p.value=p.adjust(interaction_stats$p.value)
-  save(list = c(res_l,interaction_stats),file=paste(pipeline_path,"/input/",sep=""))
-  for (i in 1:(length(st))){
-    for (j in (1:length(st))){
-      if (i==j){
-        next
-      }
-      res=res_l[[i]][[j]]
-      bin_plot2(st[i],st[j],res$plot_list[["mat"]],res$plot_list[["ord1"]],res$plot_list[["ord2"]],interaction_stats,figure_path = main_figures_path)
-    }
+  for (i in 1:nrow(st)){
+    subtype1=as.character(st[i,1])
+    subtype2=as.character(st[i,2])
+      key_s=paste(subtype1,subtype2,sep="_")
+      print(key_s)
+      bin_plot2(subtype1,subtype2,res_l[[key_s]]$plot_list[["mat"]],res_l[[key_s]]$plot_list[["ord1"]],res_l[[key_s]]$plot_list[["ord2"]],interaction_stats,figure_path = main_figures_path)
   }
   
   
@@ -483,7 +480,9 @@ main_ligand_receptor=function(){
   
   get_ligand_receptor_data(main_ligand_receptor,samps_pat1,samps_pat2,paste(pipeline_path,"/input/tables/Ligand_receptor_pairs.csv",sep=""))
   figure_4b_c()
-  score_distrib=pairwise_intensity_maps(c("Macrophages","Fibroblasts","DC","T","Endothelial"),tables_output_path = paste(pipeline_path,"/output/tables/",sep=""))
+  
+  st=expand.grid(c("Macrophages","Fibroblasts","DC","T","Endothelial"),c("Macrophages","Fibroblasts","DC","T","Endothelial"));st=st[st[,1]!=st[,2],];st=st[st[,1]!="Endothelial",]
+  score_distrib=pairwise_intensity_maps(st=st,tables_output_path = paste(pipeline_path,"/output/tables/",sep=""),load=T)
   
   open_plot(supp_figures_path,"figure_s6a",plot_type = "pdf",width = 5,height = 4)
   par(mar=c(6,5,1,1))
