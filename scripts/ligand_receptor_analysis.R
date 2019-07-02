@@ -455,7 +455,7 @@ pairwise_intensity_maps=function(st,tables_output_path,load_stats=F){
       pair_mask=c(pair_mask,res_l[[key_s]][["pair_mask"]])
     }
     interaction_stats$adj.p.value=p.adjust(interaction_stats$p.value)
-    save(list = c("res_l","interaction_stats","intensity_score1","intensity_score2"),file=paste(pipeline_path,"/input/ligand_receptor.rd",sep=""))
+    save(list = c("res_l","interaction_stats","intensity_score1","intensity_score2","pair_mask"),file=paste(pipeline_path,"/input/ligand_receptor.rd",sep=""))
   }
   for (i in 1:nrow(st)){
     subtype1=as.character(st[i,1])
