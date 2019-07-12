@@ -7,7 +7,7 @@ library(matrixStats)
 download_files=function(pipeline_path){
   dir.create(paste(pipeline_path,"input","clustered_scRNA_data",sep="/"),showWarnings = F)
              
-  download.file("https://www.dropbox.com/s/abc18m5sb20xv68/model_and_samples_ileum.rd?dl=1",destfile = paste(pipeline_path,"input","clustered_scRNA_data","model_and_samples_ileum.rd",sep="/"))
+  download.file("https://www.dropbox.com/s/v0fr7pejzfynmbr/model_and_samples_ileum.rd?dl=1",destfile = paste(pipeline_path,"input","clustered_scRNA_data","model_and_samples_ileum.rd",sep="/"))
   download.file("https://www.dropbox.com/s/79wdka2vtgv7lrr/model_and_samples_blood.rd?dl=1",destfile = paste(pipeline_path,"input","clustered_scRNA_data","model_and_samples_blood.rd",sep="/"))
   
   

@@ -492,9 +492,6 @@ load_bulk_datasets=function(load_text=F){
   ##  
   ##################################
   
-  
- browser()
-  
   risk_raw=matrix(NA,length(genes),ncol(l$risk$raw),dimnames = list(genes,colnames(l$risk$raw)))
   risk_raw[rownames(l$risk$raw),]=as.matrix(log(1+l$risk$raw))
   raw_exprs=cbind(raw_exprs,risk_raw)
@@ -727,7 +724,7 @@ main_bulk=function(download_data=T,load_data=F){
     lbd_res2$design$B_Cur=NULL
     lbd_res2$design$B_Dx=NULL
     lbd_res2$design$age=NULL
-    bulk=lbd_res2
+    bulk<<-lbd_res2
     
     
     de_res<<-read.csv(paste(pipeline_path,"input/DE/DE_inf_pat1_vs_pat2_total.csv",sep="/"),row.names = 1)
@@ -812,3 +809,8 @@ main_bulk=function(download_data=T,load_data=F){
 
 }
 
+
+write_output_table=function(){
+  mat=(bulk$design[bulk$design$dataset=="RISK",]) 
+  write.csv(cbind(RNA_ID=rownames(mat),mat),file = paste(pipeline_path,"output/tables/RISK_metadata.csv",sep=""))
+}
