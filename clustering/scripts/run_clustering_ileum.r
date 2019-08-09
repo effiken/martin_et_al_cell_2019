@@ -1,6 +1,10 @@
-main_clustering=function(clustering_root="martin_et_al_cell_2019/clustering/"){
+#install.packages('tglkmeans', repos=c(getOption('repos'), 'https://tanaylab.bitbucket.io/repo'))
 
-library(methods)
+
+library(tglkmeans)
+main_clustering=function(clustering_root="martin_et_al_cell_2019/clustering/",download_umitabs=T,raw_umitabs_path=NULL){
+
+
 scClustering_dir<<-paste(clustering_root,"/scripts",sep="")
 source(paste(scClustering_dir,"/clustering3.r",sep=""))
 
@@ -35,23 +39,27 @@ insilico_gating$RBC=list()
 insilico_gating$RBC$genes=c("HBB","HBA1","HBA2")
 insilico_gating$RBC$interval=c(0,0.1)
 
-#libnames=setdiff(samples,c("122","123","180","181","186","187","197"))
 
-#data_l=read_multiple_mtx("~/GoogleDrive/work/shared/data/IBD_10x_data/human/Grch38/",libnames,cell_interval = c(1000,1e6),noise_interval = c(100,1e6))
-#save(data_l,file="/tmp/tmp_data_l.rd")
+#
 
 
   
   dir.create("tmp",showWarnings = F)
-  
-  download.file("https://www.dropbox.com/s/8vaezppfzno993l/tmp_data_l_minumi_1000.rd?dl=1",destfile = "tmp/tmp_data_l_minumi_1000.rd")
-  
+  if (download_umitabs){
+    download.file("https://www.dropbox.com/s/8vaezppfzno993l/tmp_data_l_minumi_1000.rd?dl=1",destfile = "tmp/tmp_data_l_minumi_1000.rd")
+  }
+  else {
+    data_l=read_multiple_mtx(raw_umitabs_path,libnames,cell_interval = c(1000,1e6),noise_interval = c(100,1e6))
+    save(data_l,file="/tmp/tmp_data_l_minumi_1000.rd")
+  }
   
   model_name="combined_081718_50_5e6_kmreg01"
   
   pdf(paste(model_name,".pdf",sep=""))
-  cluster(data_l_path="tmp/tmp_data_l_minumi_1000.rd",model_name = model_name,k=50,load_seed=F,running_mode="LSF_seeding",
-          params=list(
+  cluster(data_l_path="tmp/tmp_data_l_minumi_1000.rd",model_name = model_name,k=50,load_seed=F,
+          running_mode="LSF_seeding",
+#            running_mode="local",
+            params=list(
             train_set_size  = 1000,
             test_set_size = 1000,
             insilico_gating = insilico_gating,
