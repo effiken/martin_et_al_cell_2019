@@ -7,7 +7,6 @@ Tested on macOS, R v3.6.0
 2. R packages: 
    - viridis
    - RColorBrewer
-   - RColorBrewer
    - gplots
    - Matrix
    - Matrix.utils
