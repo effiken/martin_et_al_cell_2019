@@ -1,5 +1,5 @@
-# Making the figures
-## Requirements
+## Making the figures
+### Requirements
 
 1. R
 2. R packages: 
@@ -14,7 +14,7 @@
 3. Downloaded and unzipped version of this repository  on a local path.
 
 
-## Running the scripts in R
+### Running the scripts in R
 
 1. Assuming martin_et_al_cell_2019 is the local path of the repository we need to load the script files:
 
@@ -25,7 +25,7 @@
 `make_martin_et_al_figures("martin_et_al_cell_2019/",download_data = F)`
 
 
-## Output
+### Output
 
 Figure will be generated in:
   - martin_et_al_cell_2019/output/main_figures/
