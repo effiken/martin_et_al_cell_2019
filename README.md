@@ -1,6 +1,8 @@
 ## Making the figures
 ### Requirements
 
+Tested on macOS, R v3.6.0
+
 1. R
 2. R packages: 
    - viridis
