@@ -1,7 +1,7 @@
 ## Making the figures
 ### Requirements
 
-Tested on macOS, R v3.6.0
+Tested on macOS
 
 1. R
 2. R packages: 
@@ -34,3 +34,27 @@ Figure will be generated in:
   
 Tables will be generated in:
   - martin_et_al_cell_2019/output/tables/
+
+## Clustering
+
+### Requirements
+
+Tested on linux LSF HPC
+
+1. R
+2. R packages:
+   - Matrix
+   - Matrix.utils
+   - gplots
+   - seriation
+   - [tglkmeans](https://bitbucket.org/tanaylab/tglkmeans)
+   - [scDissector](https://github.com/effiken/scDissector)
+3. Downloaded and unzipped version of this repository  on a local path.
+
+### Running the scripts in R
+
+Assuming martin_et_al_cell_2019 is the local path of the repository:
+
+`source("martin_et_al_cell_2019/scripts/clustering/run_clustering_ileum.r")`
+
+Note: Each run of the clustering might produce slightly different results due to different random seeds.
