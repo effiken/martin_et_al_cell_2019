@@ -8,11 +8,11 @@ library(Matrix.utils)
 library(seriation)
 library(scDissector)
 
-
+#######################################################################################
 #
 #  make_martin_et_al_figures  
 #
-#
+#  pipeline_path - path of 
 
 make_martin_et_al_figures=function(pipeline_path,download_data=T,make_figures=T){
   
