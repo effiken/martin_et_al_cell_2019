@@ -1,19 +1,87 @@
 library(viridis)
 library(RColorBrewer)
 library(matrixStats)
+library(RColorBrewer)
+library(gplots)
+library(Matrix)
+library(Matrix.utils)
+library(seriation)
+library(scDissector)
+
+
+#
+#  make_martin_et_al_figures  
+#
+#
+
+make_martin_et_al_figures=function(pipeline_path,download_data=T,make_figures=T){
+  
+  
+  stats_list<<-list()
+  pipeline_path<<-pipeline_path
+  path_scripts<<-"scripts/"
+  source(paste(pipeline_path,"/scripts/graphics.r",sep=""))
+  
+  if (download_data){
+    download_files(pipeline_path)
+  }
+  
+ 
+  read_sc_data(pipeline_path =pipeline_path)
+  create_global_vars(pipeline_path =pipeline_path)
+  make_common_stats()
+  
+  if (make_figures){
+    dir.create(paste(pipeline_path,"output",sep="/"))
+    dir.create(paste(pipeline_path,"output/main_figures",sep="/"))
+    dir.create(paste(pipeline_path,"output/supp_figures",sep="/"))
+    dir.create(paste(pipeline_path,"output/tables",sep="/"))
+    source(paste(pipeline_path,"scripts/figure1.R",sep="/"))
+    source(paste(pipeline_path,"scripts/figure2.R",sep="/"))
+    source(paste(pipeline_path,"scripts/figure3.R",sep="/"))
+    source(paste(pipeline_path,"scripts/figure4.R",sep="/"))
+    source(paste(pipeline_path,"scripts/figure5.R",sep="/"))
+    
+    message("Making figure 1")
+    make_figure1()
+    
+    message("Making figure 2")
+    make_figure2()
+    
+    message("Making figure 3")
+    make_figure3()
+    
+    message("Making figure 4")
+    make_figure4()
+    
+    message("Making figure 5")
+    make_figure5()
+    table_s4() 
+  }
+}
+
+
+
+
+
+
+
 
 
 
 download_files=function(pipeline_path){
   dir.create(paste(pipeline_path,"input","clustered_scRNA_data",sep="/"),showWarnings = F)
-             
-  download.file("https://www.dropbox.com/s/v0fr7pejzfynmbr/model_and_samples_ileum.rd?dl=1",destfile = paste(pipeline_path,"input","clustered_scRNA_data","model_and_samples_ileum.rd",sep="/"))
-  download.file("https://www.dropbox.com/s/79wdka2vtgv7lrr/model_and_samples_blood.rd?dl=1",destfile = paste(pipeline_path,"input","clustered_scRNA_data","model_and_samples_blood.rd",sep="/"))
-  
-  
   dir.create(paste(pipeline_path,"input","external_cohorts_data",sep="/"),showWarnings = F)
   dir.create(paste(pipeline_path,"input","DE",sep="/"),showWarnings = F)
+  
+  message("Downloading file 1/4")
+  download.file("https://www.dropbox.com/s/v0fr7pejzfynmbr/model_and_samples_ileum.rd?dl=1",destfile = paste(pipeline_path,"input","clustered_scRNA_data","model_and_samples_ileum.rd",sep="/"))
+  message("Downloading file 2/4")
+  download.file("https://www.dropbox.com/s/79wdka2vtgv7lrr/model_and_samples_blood.rd?dl=1",destfile = paste(pipeline_path,"input","clustered_scRNA_data","model_and_samples_blood.rd",sep="/"))
+  message("Downloading file 3/4")
   download.file("https://www.dropbox.com/s/4emrgk7g2xb9o0m/DE_inf_pat1_vs_pat2_total.csv?dl=1",destfile = paste(pipeline_path,"input","DE","DE_inf_pat1_vs_pat2_total.csv",sep="/"))
+  message("Downloading file 3/4")
+  download.file("https://www.dropbox.com/s/zvuoq8hkxt3cwll/bulk_data.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","bulk_data.rd",sep="/"))
 }
 
 get_edges=function(l,name=NA){
@@ -70,10 +138,6 @@ read_sc_data=function(pipeline_path){#,ileum_model_version="model_combined_08151
   mask_ileum=as.character(sample_tab$index)[(!sample_tab$Exclude_scRNAseq)&sample_tab$tissue=="ILEUM"&(sample_tab$CHEMISTRY=="V1"|sample_tab$CHEMISTRY=="V2")]
   mask_blood=as.character(sample_tab$index)[(!sample_tab$Exclude_scRNAseq)&sample_tab$tissue=="BLOOD"&(sample_tab$CHEMISTRY=="V1"|sample_tab$CHEMISTRY=="V2")]
   
-  
-  ##TODO - check where/if it is used
-#  lab<<-read.csv("input/tables/Laboratory results_010218.csv",row.names = 2)
- 
   ileum_rd_filename=paste(pipeline_path,"input","clustered_scRNA_data","model_and_samples_ileum.rd",sep="/")
   blood_rd_filename=paste(pipeline_path,"input","clustered_scRNA_data","model_and_samples_blood.rd",sep="/")
   #if (project){
@@ -246,63 +310,9 @@ table_s4=function(){
 }
 
 
-
-main=function(pipeline_path,download_data=T,only_load_data=F,make_figures=T){
-  library(RColorBrewer)
-  library(gplots)
-  library(Matrix)
-  library(Matrix.utils)
-  library(seriation)
-  library(scDissector)
-  
-  stats_list<<-list()
-  pipeline_path<<-pipeline_path
-  path_scripts<<-"scripts/"
-  source(paste(pipeline_path,"/scripts/graphics.r",sep=""))
-  
-  if (download_data){
-    download_files(pipeline_path)
-  }
-  
-  if (download_data || only_load_data){
-    read_sc_data(pipeline_path =pipeline_path)
-
-  }
-  
-  create_global_vars(pipeline_path =pipeline_path)
-  make_common_stats()
-  
-  if (make_figures){
-    dir.create(paste(pipeline_path,"output",sep="/"))
-    dir.create(paste(pipeline_path,"output/main_figures",sep="/"))
-    dir.create(paste(pipeline_path,"output/supp_figures",sep="/"))
-    dir.create(paste(pipeline_path,"output/tables",sep="/"))
-    source(paste(pipeline_path,"scripts/figure1.R",sep="/"))
-    source(paste(pipeline_path,"scripts/figure2.R",sep="/"))
-    source(paste(pipeline_path,"scripts/figure3.R",sep="/"))
-    
-  
-    message("Making figure 1")
-    make_figure1()
-    
-    message("Making figure 2")
-    make_figure2()
-    
-    message("Making figure 3")
-    make_figure3()
-  #  my_source("chem_cyt3.R")
-   
-    table_s4() 
-  }
-}
-
-
 normalize_by_clusterset_frequency2=function(lm,selected_samples){
   freqs=get_freqs(lm,selected_samples)
   
   
   return(sapply(lm$cluster_sets[names(lm$cluster_sets)!="Not good"],norm_one_clusterset))
 }
-
-
-

@@ -26,7 +26,7 @@ excluded_genes=c(malat,xist,jchain,hla,mts,igv,metallothionein)
 
 sample_set_list=list(
   list(datasets="CERTIFI",diagnosises="CD",tissues=c("Ileum")),
-  list(datasets="UNITI-1",diagnosises="CD",tissues=c("Ileum")),
+#  list(datasets="UNITI-1",diagnosises="CD",tissues=c("Ileum")),
   list(datasets="UNITI-2",diagnosises="CD",tissues=c("Ileum")),
   list(datasets="RISK",diagnosises="CD",tissues=c("Ileum"))
 )
@@ -186,7 +186,7 @@ get_all_zscores=function(m,design,sample_set_list=list()){
 
 
 
-plot_dataset=function(dataset_name="",tissue="Ileum",ngenes=100,genes_to_show=NULL,path=NULL,diagnosis="CD"){
+plot_dataset=function(bulk,dataset_name="",tissue="Ileum",ngenes=100,genes_to_show=NULL,path=NULL,diagnosis="CD"){
   mask=as.character(bulk$design$dataset)==dataset_name
   statusv=as.character(bulk$design$status)
   statusv[is.na(statusv)]=""
@@ -339,7 +339,6 @@ gene_groups_heatmaps=function(m,markers1,markers2,by=NULL,s="",reg=1e-5,annot_pr
 
 
 ######################################################################################################
-c('IGLV3-10', 'IGHG1', 'IGLJ3', 'WT1-AS', 'DNAAF1', 'KIF3C', 'INHBA', 'CLEC5A', 'MARCO', 'IL6', 'CXCL10', 'AQP9', 'IL1RN', 'GPR84', 'LILRA1', 'SOD2', 'SLAMF9', 'G0S2', 'CD300E', 'IL1A', 'CCL3', 'CXCL2', 'SERPINB2', 'CXCL8', 'S100A8', 'CXCL3', 'S100A9', 'DRAM1', 'CCL3L3', 'NINJ1', 'KMO', 'MIR3945HG', 'FPR2', 'IRAK2', 'IL1B', 'PILRA', 'CCL19', 'CCL22', 'FSCN1', 'CCL17', 'LAMP3', 'SLC1A2', 'HMSD', 'TVP23A', 'NRP2', 'NCCRP1', 'CD274', 'EBI3', 'CD80', 'CCR7', 'GPR157', 'PTGIR', 'TRAFD1', 'TRIP10', 'MSLN', 'B3GALT5', 'HOXA5', 'SPINK2', 'NEO1', 'LINC00299', 'IL22', 'PRMT9', 'KRT86', 'NRIP1', 'SLC4A10', 'NUDT7', 'USP53', 'SEPP1', 'SLC40A1', 'VSIG4', 'CD209', 'IL2', 'ODF2L')
 
 load_bulk_datasets=function(load_text=F){
   clin=list()
@@ -347,8 +346,8 @@ load_bulk_datasets=function(load_text=F){
   l=list()
   message("Loading CERTIFI")
   l$certifi=read_certifi(genes=scRNAseq_genes)
-  message("Loading UNITI-1")
-  l$uniti1=read_uniti1(genes=scRNAseq_genes)
+#  message("Loading UNITI-1")
+#  l$uniti1=read_uniti1(genes=scRNAseq_genes)
   message("Loading UNITI-2")
   l$uniti2=read_uniti2(genes=scRNAseq_genes)
   message("Loading RISK")
@@ -394,8 +393,6 @@ load_bulk_datasets=function(load_text=F){
   certifi_raw=matrix(NA,length(genes),ncol(l$certifi$raw),dimnames = list(genes,colnames(l$certifi$raw)))
   certifi_raw[rownames(l$certifi$raw),]=as.matrix(l$certifi$raw)
   
-  
-  
   certifi_subject=sapply(strsplit(as.character(l$certifi$design$title),"-"),function(x){x[1]})
   certifi_diagnosis=diagnosis_conversion[l$certifi$design$`diagnosis:ch1`]
   certifi_age=as.numeric(l$certifi$design$`age (yr):ch1`)
@@ -413,47 +410,23 @@ load_bulk_datasets=function(load_text=F){
   ##
   ## UNITI-1
   ##
-  #################################
-#  To increase sample size for maintenance related analysis, we would normally combined groups of the same dose from both randomized and non-randomized populations.  For instance:
-#  placebo= “NR_CRP_P” + “RD_CRU_P”
-#  U12W=” NR_NCRP_U130W0_CRU12W” + “RD_CRU_U12W”
-#  U8W=” NR_NCRU_U90W0_CRU8W” + “RD_CRU_U8W”
-  
-  
-  uniti1_raw=matrix(NA,length(genes),ncol(l$uniti1$raw),dimnames = list(genes,colnames(l$uniti1$raw)))
-  uniti1_raw[rownames(l$uniti1$raw),]=as.matrix(l$uniti1$raw)
-  maintainance_trt_conversion=c("Pbo","Pbo","Ust q8wk","Ust q8wk","Ust q12wk","Ust q12wk")
-  names(maintainance_trt_conversion)=c("NR_CRP_P","RD_CRU_P","NR_NCRU_U90W0_CRU8W","RD_CRU_U8W","NR_NCRP_U130W0_CRU12W","RD_CRU_U12W")
- 
-  
-  uniti_subject=sapply(strsplit(as.character(l$uniti1$design$USUBJID),"-"),function(x){x[2]})
-  uniti_tissue=tissue_conversion[l$uniti1$design$ANALOC]
-  uniti_induction_treatment=treatment_conversion[l$uniti1$design$TR01AG1]
-  uniti_maintainance_treatment=maintainance_trt_conversion[l$uniti1$design$TRTGRPAM]
-  uniti_treatment=uniti_induction_treatment
-  uniti_BA=ba_converstion[l$uniti1$design$visit]
-  
-  clinical_response=(l$uniti1$design$"CDAI_I_WK8"-l$uniti1$design$"CDAI_I_WK0")<(-100)|l$uniti1$design$"CDAI_I_WK8"<150
-  clinical_remission=l$uniti1$design$"CDAI_M_WK44"<(150)
-  
-  clin$uniti1=l$uniti1$design[,-1:-5]
-  
-  ses_pooled_wk0=rowMeans(apply(l$uniti1$design[,c('SES_CD_Ileum_WK0','SES_CD_LeftColon_WK0','SES_CD_Rectum_WK0','SES_CD_RightColon_WK0','SES_CD_TransverseColon_WK0')],2,as.numeric),na.rm=T)
-  ses_pooled_wk44=rowMeans(apply(l$uniti1$design[,c('SES_CD_Ileum_WK44','SES_CD_LeftColon_WK44','SES_CD_Rectum_WK44','SES_CD_RightColon_WK44','SES_CD_TransverseColon_WK44')],2,as.numeric),na.rm=T)
-  uniti_endoscopic_response=ses_pooled_wk44/ses_pooled_wk0<0.5
-  
-  uniti_endoscopic_remission=ses_pooled_wk44<4
 
-  uniti_response=ifelse(clinical_response,"R","NR")
-#  uniti_response=ifelse(clinical_remission,"R","NR")
-  #  uniti_endoscopic_response=as.numeric(l$uniti1$design[,c('SES_CD_Ileum_WK44')])/as.numeric(l$uniti1$design[,c('SES_CD_Ileum_WK0')])<.5
+  if (!is.null(l$uniti1)){
+    uniti1_raw[rownames(l$uniti1$raw),]=as.matrix(l$uniti1$raw)
   
-  #&pmax(-1,l$uniti1$design$SES_CD_Ileum_WK8,na.rm=T)<=2,"R","NR")
-  uniti1_design=data.frame(dataset="UNITI-1",subject=uniti_subject,geo_accesion=NA,sex=NA,diagnosis="CD",age=NA,tissue=uniti_tissue,status="Inflamed",deep_ulcer=NA,BA=uniti_BA,treatment=uniti_treatment,response=uniti_response)
-  rownames(uniti1_design)=rownames(l$uniti1$design)
-  raw_exprs=cbind(raw_exprs,uniti1_raw)
-  design=rbind(design,uniti1_design)
+    uniti_subject=sapply(strsplit(as.character(l$uniti1$design$USUBJID),"-"),function(x){x[2]})
+    uniti_tissue=tissue_conversion[l$uniti1$design$ANALOC]
+    uniti_induction_treatment=treatment_conversion[l$uniti1$design$TR01AG1]
+    uniti_treatment=uniti_induction_treatment
+    uniti_BA=ba_converstion[l$uniti1$design$visit]
   
+    clin$uniti1=l$uniti1$design[,-1:-5]
+  
+    uniti1_design=data.frame(dataset="UNITI-1",subject=uniti_subject,geo_accesion=NA,sex=NA,diagnosis="CD",age=NA,tissue=uniti_tissue,status="Inflamed",deep_ulcer=NA,BA=uniti_BA,treatment=uniti_treatment,response=NA)
+    rownames(uniti1_design)=rownames(l$uniti1$design)
+    raw_exprs=cbind(raw_exprs,uniti1_raw)
+    design=rbind(design,uniti1_design)
+  }
   ####################################
   ##
   ## UNITI-2
@@ -466,20 +439,10 @@ load_bulk_datasets=function(load_text=F){
   uniti_tissue=tissue_conversion[l$uniti2$design$location]
   uniti_induction_treatment=treatment_conversion[l$uniti2$design$TR01AG1]
   
-  uniti_maintainance_treatment=maintainance_trt_conversion[l$uniti2$design$TRTGRPAM]
   uniti_treatment=uniti_induction_treatment
   uniti_BA=ba_converstion[l$uniti2$design$VISIT]
-  clinical_response=(l$uniti2$design$"CDAI_I_WK8"-l$uniti2$design$"CDAI_I_WK0")<(-100)|l$uniti2$design$"CDAI_I_WK8"<150
-  clinical_remission=l$uniti2$design$"CDAI_M_WK44"<(150)
-  
-  ses_pooled_wk0=rowMeans(apply(l$uniti2$design[,c('SES_CD_Ileum_WK0','SES_CD_LeftColon_WK0','SES_CD_Rectum_WK0','SES_CD_RightColon_WK0','SES_CD_TransverseColon_WK0')],2,as.numeric),na.rm=T)
-  ses_pooled_wk44=rowMeans(apply(l$uniti2$design[,c('SES_CD_Ileum_WK44','SES_CD_LeftColon_WK44','SES_CD_Rectum_WK44','SES_CD_RightColon_WK44','SES_CD_TransverseColon_WK44')],2,as.numeric),na.rm=T)
-  uniti_endoscopic_response=ses_pooled_wk44/ses_pooled_wk0<0.5
-  uniti_endoscopic_remission=ses_pooled_wk44<3
- 
-  uniti_response=ifelse(clinical_response,"R","NR")
   clin$uniti2=l$uniti2$design[,-1:-5]
-  uniti2_design=data.frame(dataset="UNITI-2",subject=uniti_subject,geo_accesion=NA,sex=NA,diagnosis="CD",age=NA,tissue=uniti_tissue,status="Inflamed",deep_ulcer=NA,BA=uniti_BA,treatment=uniti_treatment,response=uniti_response)
+  uniti2_design=data.frame(dataset="UNITI-2",subject=uniti_subject,geo_accesion=NA,sex=NA,diagnosis="CD",age=NA,tissue=uniti_tissue,status="Inflamed",deep_ulcer=NA,BA=uniti_BA,treatment=uniti_treatment,response=NA)
  
    rownames(uniti2_design)=rownames(l$uniti2$design)
   raw_exprs=cbind(raw_exprs,uniti2_raw)
@@ -559,8 +522,6 @@ select_genes=function(max_per_clusterset=30,thresh_cluster=0.5,thresh_pattern1=1
     marker_to_cluster_set2=marker_to_cluster_set[markers[de_res[markers,"log2_FC"]<0]]
   
 
-  #marker_to_cluster_set1=marker_to_cluster_set[marker_to_cluster_set!="EP"]#&!marker_to_cluster_set%in%grep("Stromal",marker_to_cluster_set)] 
-  #marker_to_cluster_set2=marker_to_cluster_set[marker_to_cluster_set!="EP"]#&!marker_to_cluster_set%in%grep("Stromal",marker_to_cluster_set)] 
   short_markers_list1=sapply(split(names(marker_to_cluster_set1),marker_to_cluster_set1),function(x){x[order(abs(de_res[x,"log2_FC"]),decreasing = T)][1:pmin(length(x),max_per_clusterset)]},simplify = F)
   short_markers_list2=sapply(split(names(marker_to_cluster_set2),marker_to_cluster_set2),function(x){x[order(abs(de_res[x,"log2_FC"]),decreasing = T)][1:pmin(length(x),max_per_clusterset)]},simplify = F)
   short_markers2=sapply(short_markers_list2,function(x){x[de_res[x,"log2_FC"]<0]})
@@ -576,12 +537,13 @@ select_genes=function(max_per_clusterset=30,thresh_cluster=0.5,thresh_pattern1=1
 #############################################################################################
 
 
-plot_figure_5b=function(status="Inflamed"){
+plot_figure_5b=function(bulk,status="Inflamed"){
   before_mask=bulk$design$BA=="beforeT"
   before_mask[is.na(before_mask)]=T
   mask=bulk$design$tissue=="Ileum"&bulk$design$status==status&bulk$design$diagnosis=="CD"&before_mask
 
-  datasets=c('RISK',"CERTIFI",'UNITI-1', 'UNITI-2')
+  #datasets=c('RISK',"CERTIFI",'UNITI-1', 'UNITI-2')
+  datasets=c('RISK',"CERTIFI", 'UNITI-2')
   datasets=datasets[table(bulk$design[mask,"dataset"])[datasets]>0]
 
   cols=alt_cols[c(-3,-5)][1:length(datasets)]
@@ -605,7 +567,7 @@ plot_figure_5b=function(status="Inflamed"){
 
 
 
-plot_risk_figures=function(){
+plot_risk_figures=function(bulk){
   mask_risk=bulk$design$dataset=="RISK"&bulk$design$tissue=="Ileum"&bulk$design$status=="Inflamed"&bulk$design$diagnosis=="CD"
   mask_risk[is.na(mask_risk)]=F
   by= bulk$scores[mask_risk,"score1"]
@@ -706,14 +668,14 @@ response_cumulative=function(vr,vnr){
 #######################################################################################################################################
 
 
-main_bulk=function(download_data=T,load_data=F){
+make_figure5=function(load_normalized_data=F){
   
   
   lm=ileum_ldm
   score_thresh<<-list()  
   responder_col<<-brew_cols[5]
   non_responder_col<<-brew_cols[4]
-  if (load_data){
+  if (load_normalized_data){
     lbd_res<-load_bulk_datasets(load_text)
     mask=rownames(lbd_res$design[lbd_res$design$diagnosis=="CD"&lbd_res$design$tissue=="Ileum"&(lbd_res$design$BA=="beforeT"|is.na(lbd_res$design$BA)),])
     lbd_res2=list()
@@ -727,22 +689,20 @@ main_bulk=function(download_data=T,load_data=F){
     bulk<<-lbd_res2
     
     
-    de_res<<-read.csv(paste(pipeline_path,"input/DE/DE_inf_pat1_vs_pat2_total.csv",sep="/"),row.names = 1)
-    
-    save(file="~/Downloads/bulk_data.rd",bulk)
+     
+    save(file=paste(pipeline_path,"input","external_cohorts_data","bulk_data.rd",sep="/"),bulk)
   }
-  if (download_data){
-    download.file("https://www.dropbox.com/s/vlt5zj8gpphp8hz/bulk_data.rd?dl=1",destfile = paste(pipeline_path,"input","external_cohorts_data","bulk_data.rd",sep="/"))
+  else {
     load(paste(pipeline_path,"input","external_cohorts_data","bulk_data.rd",sep="/"))
   }
+  de_res<<-read.csv(paste(pipeline_path,"input/DE/DE_inf_pat1_vs_pat2_total.csv",sep="/"),row.names = 1)
   
-  #message("pattern1:",paste(pat1,collaspse=","),"pattern2:",paste(pat2,collaspse=","))
+  
   inf_pat1<<-inflamed_samples_v2[sample_to_patient[inflamed_samples_v2]%in%pat1]
   inf_pat2<<-inflamed_samples_v2[sample_to_patient[inflamed_samples_v2]%in%pat2]
   uninf_pat1<<-uninflamed_samples_v2[sample_to_patient[uninflamed_samples_v2]%in%pat1]
   uninf_pat2<<-uninflamed_samples_v2[sample_to_patient[uninflamed_samples_v2]%in%pat2]
   ncells_per_sample=table(lm$dataset$cell_to_sample)
-  
   
   s1=apply(lm$dataset$counts[inf_pat1,,],2,sum)
   s2=apply(lm$dataset$counts[inf_pat2,,],2,sum)
@@ -768,18 +728,16 @@ main_bulk=function(download_data=T,load_data=F){
   models=cbind(ileum_ldm$model$models,EP=s_ep/sum(s_ep))
   cluster_to_cluster_set=c(cluster_to_cluster_set,"EP")
   names(cluster_to_cluster_set)[cluster_to_cluster_set=="EP"]="EP"
-  
-  scores_EP_genes<<-select_genes(max_per_clusterset =20,thresh_cluster=1,thresh_pattern1=1,thresh_pattern2 =.5 ,thresh_freq=1e-6,cluster_to_subtype=cluster_to_subtype,included_cluster_sets1=c("EP"),included_cluster_sets2=c("EP"),restrict_to_included_cluster_sets=F,trace=F)
-  
-  scores_genes<<-select_genes(max_per_clusterset =20,thresh_cluster=3,thresh_pattern1=1,thresh_pattern2 =1,thresh_freq=1e-6,cluster_to_subtype=cluster_to_subtype1,fdr_thresh = 0.001,
+
+  scores_genes<-select_genes(max_per_clusterset =20,thresh_cluster=3,thresh_pattern1=1,thresh_pattern2 =1,thresh_freq=1e-6,cluster_to_subtype=cluster_to_subtype1,fdr_thresh = 0.001,
                               included_cluster_sets1=c("Inf. Macrophages","Activated DC","pDC","IgG plasma cells","Naive/CM T cells","Tregs","ACKR1+ endothelial cells","Activated fibroblasts"),
                               included_cluster_sets2=c("Resident macrophages","moDC","IgA plasma cells","ILC3","Cytokines low Trm","Type 1 cytokines Trm","Type 3 cytokines Trm","Enteric neurons","CD36+ endothelial cells", "Fibroblasts"),
                               trace=T,restrict_to_included_cluster_sets = T)
   
   
-  bulk$scores<<-get_scores(scores_genes$markers1,scores_genes$markers2,bulk$z) 
+  bulk$scores<-get_scores(scores_genes$markers1,scores_genes$markers2,bulk$z) 
   
-  scRNA_scores<<-get_scores(scores_genes$markers1,scores_genes$markers2,mz)
+  scRNA_scores<-get_scores(scores_genes$markers1,scores_genes$markers2,mz)
 
   write.csv(file=paste(pipeline_path,"/output//tables/score_genes_figure_5d.csv",sep=""),rbind(cbind(geneSymbol=unlist(scores_genes$markers1[sapply(scores_genes$markers1,length)>0]),group="with GIMATS"),cbind(geneSymbol=unlist(scores_genes$markers2[sapply(scores_genes$markers2,length)>0]),group="without GIMATS")),quote=F,row.names=T)
   
@@ -789,28 +747,23 @@ main_bulk=function(download_data=T,load_data=F){
   close_plot()
   
   open_plot(main_figures_path,fn="figure_5b",plot_type="pdf",width = 5,height = 5)
-  plot_figure_5b()
+  plot_figure_5b(bulk,"Inflamed")
   close_plot()
   
   open_plot(main_figures_path,fn="figure_4c",plot_type="pdf",width = 5,height = 5)
-  plot_figure_5b("Uninflamed")
+  plot_figure_5b(bulk,"Uninflamed")
   close_plot()
   
   
  
-  plot_dataset("RISK",tissue="Ileum",genes_to_show = scores_genes,path=main_figures_path)
+  plot_dataset(bulk,"RISK",tissue="Ileum",genes_to_show = scores_genes,path=main_figures_path)
   
   if (!is.null(bulk$clin)){
     risk_clinical_data(bulk)
   }
-  plot_risk_figures()
+  plot_risk_figures(bulk)
   
-  plot_dataset("CERTIFI",tissue="Ileum",genes_to_show = scores_genes,,path=supp_figures_path)
+  plot_dataset(bulk,"CERTIFI",tissue="Ileum",genes_to_show = scores_genes,,path=supp_figures_path)
 
 }
 
-
-write_output_table=function(){
-  mat=(bulk$design[bulk$design$dataset=="RISK",]) 
-  write.csv(cbind(RNA_ID=rownames(mat),mat),file = paste(pipeline_path,"output/tables/RISK_metadata.csv",sep=""))
-}

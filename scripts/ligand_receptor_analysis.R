@@ -42,7 +42,7 @@ get_ligand_receptor_data=function(ldm,samps1,samps2,reg=1e-6,exprs_thresh=5e-6,l
   total_counts_per_subtype_per_patient<<-total_counts_per_subtype_per_patient[,-1]
   l=apply(corrected_counts[,cc2,],1,function(x){x2=aggregate(t(x),list(cluster_to_subtype1[colnames(x)]),sum);rownames(x2)=x2[,1];x2=x2[,-1];return(x2)})
   counts_per_gene_per_subtype_per_patient<<-array(unlist(l),dim=c(dim(l[[1]]),length(l)),dimnames=list(rownames(l[[1]]),colnames(l[[2]]),names(l)))
-  freqs=normalize_by_clusterset_frequency(ldm$dataset,samples = samps,cluster_sets=ldm$cluster_sets,pool_subtype = T,reg = 0)
+  freqs=normalize_by_clusterset_frequency(cell_to_cluster = ldm$dataset$cell_to_cluster,cell_to_sample = ldm$dataset$cell_to_sample,samples = samps,cluster_sets=ldm$cluster_sets,pool_subtype = T,reg = 0)
   freqs<<-do.call(cbind,freqs)
 
   m_rec2=ldm$model$models[validated_pairs[,2],]
@@ -478,7 +478,7 @@ main_ligand_receptor=function(){
   samps_pat1=inflamed_samples_v2[sample_to_patient[inflamed_samples_v2]%in%pat1]
   samps_pat2=inflamed_samples_v2[sample_to_patient[inflamed_samples_v2]%in%pat2]
   
-  get_ligand_receptor_data(main_ligand_receptor,samps_pat1,samps_pat2,paste(pipeline_path,"/input/tables/Ligand_receptor_pairs.csv",sep=""))
+  get_ligand_receptor_data(ileum_ldm,samps_pat1,samps_pat2,ligand_receptor_table_fn = paste(pipeline_path,"/input/tables/Ligand_receptor_pairs.csv",sep=""))
   figure_4b_c()
   
   st=expand.grid(c("Macrophages","Fibroblasts","DC","T","Endothelial"),c("Macrophages","Fibroblasts","DC","T","Endothelial"));st=st[st[,1]!=st[,2],];st=st[st[,1]!="Endothelial",]

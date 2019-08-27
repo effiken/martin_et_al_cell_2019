@@ -123,7 +123,7 @@ plot_macs_grads=function(){
   genes=plot_grad(ileum_ldm,supp_figures_path,"6d",clusts=unlist(ileum_ldm$cluster_sets$MNP$`Resident macrophages`),gene_list=gene_list,decreasing_v = c(T,F,F,F),mix_clusters = T)
 }
 
-main_figure_4=function(){
+make_figure4=function(){
   plot_pbmc_truth()
   figure_4e()
   main_ligand_receptor()
