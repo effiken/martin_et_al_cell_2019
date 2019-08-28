@@ -39,7 +39,7 @@ Tables will be generated in:
 
 ### Requirements
 
-Tested on linux LSF HPC
+Tested on linux LSF HPC. Due to lack of support of some of the depdendencies, the script cannot run on macOS.
 
 1. R
 2. R packages:
@@ -53,8 +53,12 @@ Tested on linux LSF HPC
 
 ### Running the scripts in R
 
-Assuming martin_et_al_cell_2019 is the local path of the repository:
+Assuming martin_et_al_cell_2019 is the local path of the repository, the following script will run the clustering distributedly on LSF:
 
 `source("martin_et_al_cell_2019/scripts/clustering/run_clustering_ileum.r")`
+
+Alternatively, clustering can be run locally:
+
+`source("martin_et_al_cell_2019/scripts/clustering/run_clustering_ileum_local.r")`
 
 Note: Each run of the clustering might produce slightly different results due to different random seeds.
