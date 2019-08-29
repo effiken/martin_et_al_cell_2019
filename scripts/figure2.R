@@ -64,10 +64,10 @@ inf_uninf_freq_barplot=function(freqs,compartment,fig){
 
 make_inf_uninf_freq_barplot=function(){
   freqs=normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,samples = c(inflamed_samples_filtered,uninflamed_samples_filtered),cluster_sets = ileum_ldm$cluster_sets,pool_subtype = T,reg = 0)
-  inf_uninf_freq_barplot(freqs,"MNP",fig="s5a")
-  inf_uninf_freq_barplot(freqs,"Plasma",fig="s5d")
-  inf_uninf_freq_barplot(freqs,"T",fig="s5b")
-  inf_uninf_freq_barplot(freqs,"Stromal",fig="s5c")
+  inf_uninf_freq_barplot(freqs,"MNP",fig="s4a")
+  inf_uninf_freq_barplot(freqs,"Plasma",fig="s4d")
+  inf_uninf_freq_barplot(freqs,"T",fig="s4b")
+  inf_uninf_freq_barplot(freqs,"Stromal",fig="s4c")
 }
 
 
