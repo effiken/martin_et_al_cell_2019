@@ -750,7 +750,7 @@ make_figure5=function(load_normalized_data=F){
   plot_figure_5b(bulk,"Inflamed")
   close_plot()
   
-  open_plot(main_figures_path,fn="figure_4c",plot_type="pdf",width = 5,height = 5)
+  open_plot(main_figures_path,fn="figure_5c",plot_type="pdf",width = 5,height = 5)
   plot_figure_5b(bulk,"Uninflamed")
   close_plot()
   
