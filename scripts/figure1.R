@@ -243,7 +243,7 @@ figure_s1o=function(){
   }
   freqs_inf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,inflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
   freqs_uninf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,uninflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
-  open_plot(path = main_figures_path,fn = "figure_s1o",plot_type = "pdf",6,6)
+  open_plot(path =supp_figures_path,fn = "figure_s1o",plot_type = "pdf",6,6)
   par(mar=c(5,5,1,1))
   barplot(sqrt(colSums(((freqs_inf-freqs_uninf)/((freqs_inf+freqs_uninf)/2))^2)),ylim=c(0,.8),ylab="dissimilarity (inf vs uninf",border=F,cex.names = .7)
   close_plot()

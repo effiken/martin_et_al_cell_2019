@@ -34,11 +34,10 @@ make_figure_correlation_between_subtypes=function(path,prefix,lm,selected_sample
 
 
 
-inf_uninf_freq_barplot=function(freqs,compartment,fig){
+inf_uninf_freq_barplot=function(freqs,compartment,fig,path=supp_figures_path){
   m=freqs[[compartment]]
   inf=m[inflamed_samples_filtered,]
   uninf=m[uninflamed_samples_filtered,]
-  #freq_sig_test(m[c(inflamed_samples_filtered,uninflamed_samples_filtered),],c(inflamed_samples_filtered,uninflamed_samples_filtered)%in%inflamed_samples_filtered+1)
   
   ord=order(log2(colMeans(inf)/colMeans(uninf)),decreasing=T)
   mean_inf=colMeans(inf)
@@ -46,10 +45,6 @@ inf_uninf_freq_barplot=function(freqs,compartment,fig){
   se_inf=apply(inf,2,sd)/sqrt(nrow(inf))
   se_uninf=apply(uninf,2,sd)/sqrt(nrow(uninf))
   df=data.frame(subtype=factor(c(colnames(inf),colnames(uninf)),levels=colnames(m)[ord]),frequency=c(mean_inf,mean_uninf),se=c(se_inf,se_uninf),status=c(rep("Inflamed",ncol(inf)),rep("Uninflamed",ncol(uninf))))
- # open_plot(main_figures_path,fn=paste("figure2_",compartment,"_inf_uninf_freq",sep=""),plot_type = "pdf",width = 4,height = 4)
-  #par(mar=c(2,3,1,1),lwd = .5 )
-  #barplot(cbind(uninf,inf)[c("Resident macrophages","moDC","DC2","DC1","pDC","Inf. Macrophages","mature DC"),],col=c("#984EA3","#4DAF4A","#4DAF4A","#E41A1C","#FF7F00","#FFFF33","#377EB8"),cex.axis =.7,space = .5)  
-  #open_plot(main_figures_path,fn=paste("figure2_",compartment,"_inf_uninf_freq",sep=""),plot_type = "pdf",width = 4,height = 4)
   p<-ggplot(df, aes(x=subtype, y=frequency, fill=status,width=.7)) + 
     geom_bar(position=position_dodge(), stat="identity") +
     geom_errorbar(aes(ymin=frequency-se, ymax=frequency+se),width=.2,position=position_dodge(.7)) +
@@ -57,7 +52,7 @@ inf_uninf_freq_barplot=function(freqs,compartment,fig){
     scale_fill_manual("legend", values = c("Inflamed" = cols_inf_uninf[1], "Uninflamed" = cols_inf_uninf[2])) +
     labs(title=compartment)
   p
-  ggsave(filename = paste(main_figures_path,"figure_",fig,".pdf",sep=""),p)
+  ggsave(filename = paste(path,"figure_",fig,".pdf",sep=""),p)
 
 }
 
