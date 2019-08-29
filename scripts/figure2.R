@@ -133,17 +133,17 @@ figure_2j=function(){
   
 }
 
-freq_barplot=function(fn,cell_type,subtypes=NA){
+freq_barplot=function(fn,cell_type,subtypes=NA,path=main_figures_path){
   inf=colMeans(normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,samples = inflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg = 0)[[cell_type]])
   uninf=colMeans(normalize_by_clusterset_frequency(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample,samples = uninflamed_samples_filtered,pool_subtype = T,cluster_sets = ileum_ldm$cluster_sets,reg = 0)[[cell_type]])
   if (is.na(subtypes)){
     subtypes=names(inf)[order(inf/uninf)]
   }
-  open_plot(main_figures_path,fn=fn,plot_type = "pdf",width = 3,height = 3)
+  open_plot(path,fn=fn,plot_type = "pdf",width = 3,height = 3)
   par(mar=c(2,3,1,1),lwd = .5 )
   barplot(cbind(uninf,inf)[subtypes,],col=brewer.pal(length(subtypes),"Set3"),cex.axis =.7,space = .5,ylim=c(0,1))  
   close_plot()
-  open_plot(main_figures_path,fn=paste(fn,"_legend",sep=""),plot_type = "pdf",width = 3,height = 3)
+  open_plot(path,fn=paste(fn,"_legend",sep=""),plot_type = "pdf",width = 3,height = 3)
   par(mar=c(2,3,1,1),lwd = .5 )
   plot.new()
   legend("bottomright",legend=rev(subtypes),pch=15,col=rev(brewer.pal(length(subtypes),"Set3")))  
@@ -268,7 +268,7 @@ make_figure2=function(){
   freq_barplot("figure_2i_Stromal",cell_type = "Stromal")
   
   #ILC_inf_uninf_freq
-  freq_barplot("figure_s3g",cell_type = "ILC")
+  freq_barplot("figure_s3g",cell_type = "ILC",path=supp_figures_path)
   
   gene_list_path=paste(pipeline_path,"input/gene_lists/",sep="/")
   #T-cells 

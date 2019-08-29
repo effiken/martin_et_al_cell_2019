@@ -77,9 +77,7 @@ make_truth_plots=function(clusters_to_exclude=c("23","44"),zlim=c(0,3))
 get_pooled_freqs=function(samples,celltypes_to_include=c()){
   scrna=as.data.frame.matrix(table(ileum_ldm$dataset$cell_to_cluster,ileum_ldm$dataset$cell_to_sample))
   scrna_subset=scrna[,samples]
-#  scrna_pooling=c("Plasma","MNP","Stromal","T","Stromal","Stromal","Plasma","cDC" ,"Plasma","Stromal","T","Stromal","Plasma","B","MNP","Enteric neurons","T","Stromal","T","Plasma","T","T","Not good","cDC","Mast","T","Plasma","ILC" ,"T","T","cDC","cDC", "B","T","ILC","T","Plasma" ,"T", "B" ,"pDC","MNP","T","T","Not good","Plasma","T","T","T","Plasma","Plasma") 
-  #names(scrna_pooling)=as.character(1:50)
-  #scrna_pooling=scrna_pooling[names(ileum_ldm$clustAnnots)]
+
   dcs=setdiff(grep("DC",ileum_ldm$clustAnnots,val=T),"pDC")
   pool_by=cluster_to_cluster_set_with_pdc[rownames(scrna_subset)]
   pool_by[ileum_ldm$clustAnnots[names(pool_by)]%in%dcs]="cDC"
@@ -241,11 +239,11 @@ figure_s1o=function(){
     }
     return(sapply(cluster_sets, pool_one_clusterset, simplify = F))
   }
-  freqs_inf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,inflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
-  freqs_uninf= t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,uninflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
+  freqs_inf= 1e-2+t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,inflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
+  freqs_uninf= 1e-2+t(do.call(cbind,pool_subtypes_frequencies(ileum_ldm,uninflamed_samples,cluster_sets = ileum_ldm$cluster_sets ,pool_subtype=T)))[,-2]
   open_plot(path =supp_figures_path,fn = "figure_s1o",plot_type = "pdf",6,6)
   par(mar=c(5,5,1,1))
-  barplot(sqrt(colSums(((freqs_inf-freqs_uninf)/((freqs_inf+freqs_uninf)/2))^2)),ylim=c(0,.8),ylab="dissimilarity (inf vs uninf",border=F,cex.names = .7)
+  barplot(sqrt(colSums((freqs_inf-freqs_uninf)^2)),ylab="dissimilarity (inf vs uninf",border=F,cex.names = .7)
   close_plot()
 }
 
